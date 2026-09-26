@@ -2,16 +2,15 @@
 // Gallery storage: publish, browse, like, report and delete sculptures.
 //
 // One API, two backends:
-//   - Supabase (online, shared by everyone) when js/config.js has keys
+//   - the app's REST API (online, shared by everyone)
 //   - Demo mode (IndexedDB, this browser only) when it doesn't
 //
 // There are no accounts. Each browser gets a random private "owner key" kept
 // in localStorage; only its SHA-256 hash is published with a sculpture, so
 // the same browser can later prove it made the sculpture and delete it.
 // ===========================================================================
-import { SUPABASE_URL, SUPABASE_ANON_KEY } from './config.js';
+import { API_BASE_URL } from './config.js';
 
-const BUCKET = 'sculptures';
 const PAGE_SIZE = 24;
 
 // --- Per-browser identity & preferences --------------------------------------
@@ -54,75 +53,56 @@ function cleanMeta({ title, artist }) {
 const safeSearch = s => String(s ?? '').replace(/[^\p{L}\p{N} '-]/gu, ' ').trim().slice(0, 40);
 
 // ---------------------------------------------------------------------------
-// Supabase backend
+// App API backend
 // ---------------------------------------------------------------------------
-async function supabaseStore() {
-  const { createClient } = await import('https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm');
-  const sb = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, { auth: { persistSession: false } });
-  const publicUrl = path => sb.storage.from(BUCKET).getPublicUrl(path).data.publicUrl;
-  const COLS = 'id,title,artist,likes,created_at,owner_hash,remix_of,data_path,thumb_path';
-  const toItem = async row => ({
-    id: row.id, title: row.title, artist: row.artist, likes: row.likes,
-    createdAt: new Date(row.created_at), remixOf: row.remix_of,
-    thumbUrl: publicUrl(row.thumb_path), dataUrl: publicUrl(row.data_path),
-    mine: row.owner_hash === await ownerHashPromise,
-  });
-  const fail = (what, error) => { throw new Error(`${what} failed: ${error.message || error}`); };
+async function apiStore() {
+  const api = path => `${API_BASE_URL}${path}`;
+  const headers = () => new Headers({ 'x-owner-token': ownerToken() });
+  async function request(path, options = {}) {
+    const requestHeaders = headers();
+    new Headers(options.headers).forEach((value, key) => requestHeaders.set(key, value));
+    const response = await fetch(api(path), { ...options, headers: requestHeaders });
+    if (!response.ok) {
+      const body = await response.json().catch(() => null);
+      throw new Error(body?.error || `Gallery request failed (${response.status})`);
+    }
+    return response.status === 204 ? null : response.json();
+  }
 
+  const health = await fetch(api('/health'));
+  if (!health.ok || (await health.json()).mode !== 'online') {
+    throw new Error('DigitalOcean gallery API is unavailable.');
+  }
   return {
     mode: 'online',
     async publish({ title, artist, data, thumb, remixOf = null }) {
       ({ title, artist } = cleanMeta({ title, artist }));
-      const id = crypto.randomUUID();
-      const thumbExt = thumb.type === 'image/webp' ? 'webp' : 'png';
-      const dataPath = `${id}.sclp`, thumbPath = `${id}.${thumbExt}`;
-      let r = await sb.storage.from(BUCKET).upload(dataPath, new Blob([data], { type: 'application/octet-stream' }),
-        { contentType: 'application/octet-stream', upsert: false });
-      if (r.error) fail('Uploading the sculpture', r.error);
-      r = await sb.storage.from(BUCKET).upload(thumbPath, thumb, { contentType: thumb.type, upsert: false });
-      if (r.error) fail('Uploading the picture', r.error);
-      r = await sb.from('sculptures').insert({
-        id, title, artist, remix_of: remixOf, owner_hash: await ownerHashPromise, data_path: dataPath, thumb_path: thumbPath,
-      });
-      if (r.error) fail('Saving to the gallery', r.error);
-      return { id };
+      const form = new FormData();
+      form.set('title', title);
+      form.set('artist', artist);
+      if (remixOf) form.set('remixOf', remixOf);
+      form.set('data', new Blob([data], { type: 'application/octet-stream' }), 'sculpture.sclp');
+      form.set('thumb', thumb, `thumbnail.${thumb.type === 'image/webp' ? 'webp' : 'png'}`);
+      return request('/sculptures', { method: 'POST', body: form });
     },
     async list({ sort = 'new', search = '', page = 0 } = {}) {
-      let q = sb.from('sculptures').select(COLS);
-      const s = safeSearch(search);
-      if (s) q = q.or(`title.ilike.*${s}*,artist.ilike.*${s}*`);
-      q = sort === 'likes' ? q.order('likes', { ascending: false }).order('created_at', { ascending: false })
-                           : q.order('created_at', { ascending: false });
-      const { data, error } = await q.range(page * PAGE_SIZE, page * PAGE_SIZE + PAGE_SIZE - 1);
-      if (error) fail('Loading the gallery', error);
-      return { items: await Promise.all(data.map(toItem)), more: data.length === PAGE_SIZE };
+      const params = new URLSearchParams({ sort, search: safeSearch(search), page: String(page) });
+      return request(`/sculptures?${params}`);
     },
-    async get(id) {
-      const { data, error } = await sb.from('sculptures').select(COLS).eq('id', id).maybeSingle();
-      if (error) fail('Loading the sculpture', error);
-      return data ? toItem(data) : null;
-    },
+    get: id => request(`/sculptures/${encodeURIComponent(id)}`),
     async getData(item) {
-      const res = await fetch(item.dataUrl);
+      const res = await fetch(api(`/sculptures/${encodeURIComponent(item.id)}/data`));
       if (!res.ok) throw new Error(`Downloading the sculpture failed (${res.status})`);
       return new Uint8Array(await res.arrayBuffer());
     },
     async like(id) {
       if (liked.has(id)) return null;
-      const { data, error } = await sb.rpc('like_sculpture', { sid: id });
-      if (error) fail('Liking', error);
+      const { likes: count } = await request(`/sculptures/${encodeURIComponent(id)}/like`, { method: 'POST' });
       rememberLike(id);
-      return data;                                       // new like count
+      return count;
     },
-    async report(id) {
-      const { error } = await sb.rpc('report_sculpture', { sid: id });
-      if (error) fail('Reporting', error);
-    },
-    async remove(id) {
-      const { data, error } = await sb.rpc('delete_sculpture', { sid: id, owner_token: ownerToken() });
-      if (error) fail('Deleting', error);
-      if (!data) throw new Error('Only the browser that published a sculpture can delete it.');
-    },
+    report: id => request(`/sculptures/${encodeURIComponent(id)}/report`, { method: 'POST' }),
+    remove: id => request(`/sculptures/${encodeURIComponent(id)}/delete`, { method: 'POST' }),
   };
 }
 
@@ -201,7 +181,6 @@ function demoStore() {
   };
 }
 
-// The store the pages use. Falls back to demo mode if Supabase isn't set up.
-export const storePromise = (SUPABASE_URL && SUPABASE_ANON_KEY)
-  ? supabaseStore().catch(err => { console.error('Supabase unavailable, using demo mode:', err); return demoStore(); })
-  : Promise.resolve(demoStore());
+// The static VS Code preview has no API, so it continues to use local demo data.
+export const storePromise = apiStore()
+  .catch(err => { console.warn('Gallery API unavailable, using demo mode:', err); return demoStore(); });

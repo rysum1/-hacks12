@@ -8,53 +8,60 @@ studio.html       The sculpting studio, with "Publish to gallery"
 js/engine.js      The stone block, tools, meshing, and the .sclp save format
 js/stone.js       Stone material (photo texture, paint, bump)
 js/viewer.js      3D viewer used by the gallery
-js/store.js       Gallery storage: Supabase online, or demo mode in the browser
-js/config.js      <- your Supabase keys go here
+js/store.js       Gallery storage: DigitalOcean API, or browser demo mode
+server/index.js   Node API for gallery data and Spaces file storage
+server/schema.sql PostgreSQL schema
 assets/stone.jpg  Stone texture
-supabase/schema.sql  One-time database setup
 ```
 
 ## 1. Run it on your computer
 
 The site uses separate JavaScript files, so it has to be served over http
-(double-clicking the HTML files won't work). From this folder, run one of:
+(double-clicking the HTML files won't work). The VS Code static preview at
+`http://localhost:3000/-hacks12/` continues to use browser-only demo data.
+To run the API locally, use:
 
 ```
-npx serve .
-python3 -m http.server 8000
+npm install
+npm start
 ```
 
-Then open the address it prints. Without Supabase keys the gallery runs in
-**demo mode**: everything works, but sculptures are saved only in that browser.
+Open `http://localhost:3001/`. Without DigitalOcean settings, it also uses
+demo mode. To test the shared gallery, configure the environment variables
+described below before starting the server.
 
-## 2. Connect the online gallery (Supabase, free tier)
+## 2. Connect DigitalOcean storage and database
 
-1. Sign up at supabase.com and create a new project (pick a region near you;
-   save the database password somewhere safe).
-2. In the project: **SQL Editor → New query**, paste all of
-   `supabase/schema.sql`, click **Run**. It creates the table, the security
-   rules and the file storage. It's safe to run again.
-3. **Project Settings → API**: copy the **Project URL** and the **anon public**
-   key into `js/config.js`.
-4. Reload the gallery - the yellow "Demo mode" note disappears.
+1. Create a **Spaces** bucket for the sculpture files. Keep it private; the
+  API streams public gallery files without exposing Spaces credentials.
+2. Create a **Managed PostgreSQL** database. Save its connection string and
+  download its CA certificate. Allow the App Platform service to connect.
+3. Create a **DigitalOcean App Platform** web service from this repository.
+  Use the repository root, `npm install` as the build command, and `npm start`
+  as the run command. The Node service serves both the pages and `/api`.
+4. Add these App Platform environment variables (mark credentials as secret):
 
-The anon key is designed to be public. What keeps the data safe is the rules
-in `schema.sql`: visitors can read and publish, but can't edit or delete
-anything directly; likes, reports and deletes only go through dedicated
-functions.
+  ```
+  NODE_ENV=production
+  DATABASE_URL=<Managed PostgreSQL connection string>
+  DATABASE_CA_CERT=<contents of the database CA certificate>
+  SPACES_ENDPOINT=https://<region>.digitaloceanspaces.com
+  SPACES_REGION=us-east-1
+  SPACES_BUCKET=<private bucket name>
+  SPACES_ACCESS_KEY_ID=<Spaces access key>
+  SPACES_SECRET_ACCESS_KEY=<Spaces secret key>
+  ```
 
-## 3. Put it on the web with your domain
+  Create a Spaces access key for this app and keep both key values on the
+  server. Never put them in `js/config.js` or frontend code.
+5. Run `npm run db:setup` once with `DATABASE_URL` and `DATABASE_CA_CERT` set
+  and network access to the managed database. It creates the gallery tables.
+6. Deploy the App Platform service. Open its URL; the demo-mode notice should
+  disappear once the API can connect to PostgreSQL and Spaces.
 
-Any static host works; these are free:
-
-- **Netlify** - drag this folder onto app.netlify.com/drop, or connect your Git repo.
-- **Cloudflare Pages** - connect the Git repo; no build command, output folder `/`.
-- **Vercel** - import the Git repo; framework preset "Other".
-
-Then connect the domain: in the host's dashboard choose **Domains → Add
-custom domain**, and add the DNS records it shows you at your domain
-registrar (usually one `CNAME`, or an `A` record for the bare domain). HTTPS
-is set up automatically.
+The app expects the database CA certificate so PostgreSQL connections are
+encrypted and verified. The private Spaces bucket is read and written only by
+the API service.
 
 ## How the gallery works
 
@@ -63,20 +70,20 @@ is set up automatically.
   that browser (and only it) sees a **Delete** button on its own work.
   Clearing browser data loses that key.
 - **Likes** are one per sculpture per browser (remembered in the browser).
-- **Reports**: 3 reports hide a sculpture. To bring one back or remove it for
-  good, edit the `sculptures` table in Supabase → Table Editor (`hidden`).
+- **Reports**: one report per browser key; 3 reports hide a sculpture. To
+  restore one, update its `hidden` value in PostgreSQL.
 - **Remix** opens `studio.html?remix=<id>`; the published result links back to
   the original.
 - **Links** like `index.html#sculpture=<id>` open a sculpture directly
   ("Copy link" in the viewer).
 - **Files**: each sculpture is a `.sclp` file (typically 5-60 KB) plus a
-  512 px WebP picture, in the public `sculptures` storage bucket. The free
-  tier's 1 GB storage fits tens of thousands.
+  512 px WebP picture in private Spaces storage; the API streams them to the
+  gallery.
 
 ### Known limits (fine for a hackathon, worth revisiting later)
 
-- There's no rate limiting, so a determined person could spam uploads or likes.
-  Supabase's paid tiers and Cloudflare offer rate limiting if you need it.
+- Basic API rate limiting is enabled, but a determined person could still
+  spam uploads; add stronger abuse controls before a large public launch.
 - Deleted or hidden sculptures stay in storage (they're just not listed).
 - Moderation is only the report threshold; check the Table Editor now and then.
 

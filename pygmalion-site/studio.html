@@ -1,0 +1,1794 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Pygmalion's 100% Authentic Sculpting Experience</title>
+<style>
+  html, body { margin: 0; height: 100%; overflow: hidden; background: #1d1f24;
+               font-family: system-ui, sans-serif; color: #eee; }
+  canvas { display: block; touch-action: none; }
+  [hidden] { display: none !important; }
+  #ui { position: absolute; top: 12px; left: 92px; width: 258px; padding: 12px 14px;
+        max-height: calc(100vh - 48px); overflow-y: auto; box-sizing: border-box;
+        background: rgba(20,22,26,.88); border-radius: 10px; font-size: 13px;
+        line-height: 1.6; user-select: none; }
+  #ui label { display: flex; justify-content: space-between; align-items: center; gap: 8px; }
+  #ui input[type=range] { width: 115px; }
+  .row { display: flex; gap: 6px; margin: 6px 0; }
+  button { flex: 1; background: #2c3038; color: #eee; border: 1px solid #444a55;
+           border-radius: 6px; padding: 5px; cursor: pointer; font-size: 12px; }
+  button:hover { background: #363b45; }
+  button.active { background: #4a7bd0; border-color: #4a7bd0; }
+  .scale { display: flex; justify-content: space-between; font-size: 11px; opacity: .55;
+           margin: -4px 0 4px 105px; }
+  .tools { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; margin: 6px 0; }
+  .tools .wide { grid-column: span 2; }
+  /* Vertical tool strip: light blue, icons carry a 1-pixel black outline so they pop. */
+  #toolbar { position: absolute; top: 12px; left: 12px; display: flex; flex-direction: column; gap: 4px;
+             padding: 6px; background: #b3d4f0; border-radius: 10px; }
+  #toolbar button { width: 58px; height: 58px; flex: none; padding: 0; display: grid; place-items: center;
+                    background: transparent; border: 2px solid transparent; border-radius: 8px; }
+  #toolbar button:hover { background: #9dc5e8; }
+  #toolbar button.active { background: #86b6e0; border-color: #1f4f8f; }
+  #toolbar button:focus-visible { outline-color: #1f4f8f; }
+  .chisel-icon { width: 48px; height: 48px; image-rendering: pixelated; display: block; }
+  /* Generated icons show at their true pixel size (1 art pixel = 1 screen pixel) so they stay crisp. */
+  .tool-icon { width: auto; height: auto; max-width: 54px; max-height: 54px; image-rendering: pixelated; display: block; }
+  .tb-sep { height: 2px; margin: 2px 6px; background: #86b6e0; border-radius: 1px; }
+  .swatches { display: flex; align-items: center; gap: 5px; flex-wrap: wrap; margin: 4px 0; }
+  .swatches span { width: 18px; height: 18px; border-radius: 50%; cursor: pointer;
+                   border: 2px solid transparent; box-sizing: border-box; }
+  .swatches span.active { border-color: #fff; }
+  #paintColor { width: 30px; height: 24px; padding: 0; border: none; background: none; cursor: pointer; }
+  select { width: 125px; background: #2c3038; color: #eee; border: 1px solid #444a55;
+           border-radius: 6px; padding: 3px; font-size: 12px; }
+  #status { position: absolute; left: 50%; bottom: 16px; transform: translateX(-50%);
+            max-width: min(760px, calc(100vw - 32px)); padding: 10px 14px; border-radius: 10px;
+            background: rgba(20,22,26,.9); font-size: 14px; line-height: 1.45; text-align: center;
+            display: flex; flex-wrap: wrap; gap: 8px 12px; align-items: center; justify-content: center; }
+  #status button { flex: none; font-size: 13px; padding: 6px 10px; }
+  #status button.primary { background: #d9a832; border-color: #d9a832; color: #1d1f24; font-weight: 600; }
+  #status b { color: #ffcc55; }
+  button:focus-visible, select:focus-visible, input:focus-visible { outline: 2px solid #ffcc55; outline-offset: 2px; }
+  .head { display: flex; flex-direction: column; gap: 4px; }
+  .head .brand { font-family: Georgia, 'Times New Roman', serif; font-size: 15px; line-height: 1.25; }
+  .head .links { display: flex; gap: 12px; }
+  button.link { background: none; border: none; padding: 0; flex: none; color: #9cc4ff; font-size: 12px; cursor: pointer; }
+  button.link:hover { background: none; text-decoration: underline; }
+  a.link { color: #9cc4ff; font-size: 12px; text-decoration: none; }
+  a.link:hover { text-decoration: underline; }
+  button.primary, a.button.primary { background: #d9a832; border-color: #d9a832; color: #1d1f24; font-weight: 600; }
+  button.primary:hover { background: #e6b845; }
+  button:disabled { opacity: .6; cursor: default; }
+  .note { font-size: 12px; opacity: .75; margin: 4px 0; }
+  .error { color: #ff8a7a; font-size: 13px; min-height: 1em; margin: 4px 0; }
+  a.button { display: inline-block; text-align: center; text-decoration: none; border-radius: 6px; padding: 6px 10px;
+             font-size: 12px; border: 1px solid #444a55; flex: 1; }
+  dialog { background: #1f2227; color: #eee; border: 1px solid #3a3f48; border-radius: 12px; padding: 18px 20px;
+           width: min(360px, calc(100vw - 32px)); font-family: system-ui, sans-serif; }
+  dialog::backdrop { background: rgba(0,0,0,.55); }
+  dialog h2 { margin: 0 0 10px; font-size: 18px; }
+  #pubThumb { width: 100%; aspect-ratio: 1; border-radius: 8px; background: #15171a; display: block; margin-bottom: 10px; }
+  .field { display: flex; flex-direction: column; gap: 4px; font-size: 13px; margin: 8px 0; }
+  .field input { font: inherit; font-size: 14px; padding: 7px 9px; border-radius: 6px; border: 1px solid #444a55;
+                 background: #2c3038; color: #eee; }
+  /* Tutorial: parchment speech bubble + framed pixel portrait, top right. */
+  #tutorial { position: absolute; top: 14px; right: 14px; display: flex; align-items: flex-start; gap: 10px;
+              max-width: min(470px, calc(100vw - 360px)); min-width: 280px; z-index: 5; }
+  /* 128px = exactly 4x the 32px art, so every pixel stays square and sharp. */
+  #tutFace { width: 128px; height: 128px; flex: none; image-rendering: pixelated; }
+  #tutorial .bubble { position: relative; flex: 1; background: #f6eedb; color: #2b2418; border: 2px solid #b99b62;
+                      border-radius: 14px; padding: 14px 16px 10px; box-shadow: 0 6px 18px rgba(0,0,0,.45);
+                      font-family: Georgia, 'Times New Roman', serif; }
+  /* The tail points left, at Pygmalion. */
+  #tutorial .bubble { margin-top: 18px; }
+  #tutorial .bubble::after, #tutorial .bubble::before { content: ''; position: absolute; top: 34px; border-style: solid; }
+  #tutorial .bubble::before { left: -14px; border-width: 10px 14px 10px 0; border-color: transparent #b99b62 transparent transparent; }
+  #tutorial .bubble::after  { left: -10px; border-width: 8px 11px 8px 0;  border-color: transparent #f6eedb transparent transparent; margin-top: 2px; }
+  #tutText { margin: 0 0 10px; font-size: 16px; line-height: 1.45; }
+  #tutText.cheer { font-size: 26px; font-weight: bold; text-align: center; letter-spacing: .5px; }
+  .tut-nav { display: flex; align-items: center; gap: 6px; font-family: system-ui, sans-serif; }
+  .tut-nav #tutCount { flex: 1; font-size: 12px; color: #7a6a4c; }
+  .tut-nav button { flex: none; font-size: 12px; padding: 5px 10px; background: #e8dcc0; color: #2b2418; border-color: #c9b58a; }
+  .tut-nav button:hover { background: #dfd0ad; }
+  .tut-nav button.primary { background: #8a5a2b; border-color: #8a5a2b; color: #fff8e8; }
+  .tut-nav button.primary:hover { background: #9d6a37; }
+  .tut-nav .tut-skip { background: none; border-color: transparent; color: #7a6a4c; text-decoration: underline; }
+  /* Pulsing ring around whatever the current step asks you to use. */
+  .tut-highlight { position: relative; z-index: 1; animation: tutPulse 1.2s ease-in-out infinite; }
+  @keyframes tutPulse { 0%, 100% { box-shadow: 0 0 0 0 rgba(255, 204, 85, .9); } 50% { box-shadow: 0 0 0 5px rgba(255, 204, 85, .25); } }
+  @media (prefers-reduced-motion: reduce) { .tut-highlight { animation: none; box-shadow: 0 0 0 3px #ffcc55; } }
+  @media (max-width: 700px) { #tutorial { left: 14px; right: 14px; top: auto; bottom: 110px; max-width: none; }
+                              #tutFace { width: 96px; height: 96px; } }
+  .zoom-row { display: flex; align-items: center; gap: 6px; margin: 6px 0; }
+  .zoom-row button { flex: none; width: 34px; font-size: 17px; line-height: 1; padding: 4px 0; }
+  .zoom-row input { flex: 1; min-width: 0; }
+  .section { margin-top: 10px; font-weight: 600; opacity: .85; }
+  canvas.orbiting { cursor: grab; }
+  canvas.orbiting:active { cursor: grabbing; }
+  .hint { opacity: .65; font-size: 12px; margin-top: 6px; }
+</style>
+</head>
+<body>
+<!-- Tool strip (Photoshop-style): one icon per tool, stacked vertically. -->
+<div id="toolbar" role="toolbar" aria-orientation="vertical" aria-label="Tools">
+  <button data-chisel="small" title="Small chisel (X)" aria-label="Small chisel"><img class="chisel-icon" alt="" src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAADAAAAAwCAYAAABXAvmHAAABqElEQVR42u3YsWrDMBAG4F+m75EXMBQyZMxQ8hbt3L3QOUPmQvfO7VuYDBo7BAx+gTyJujRGliVZtk/SCXIQMmT5/jvpEAHuda9VJQqyKpu7Kgl/PH6OwlSl4c0QVWGdN0OwDqAAQMp29MPp9MY+wAB/ODzZ8ILrFnJ2fr9/ZL+FZuG5BZiN5xRgEZ5LgMV4DgFW4XMHWI3PGYAEnysAGT5HAFJ86gDk+FRPif7tTo2PHcALp8DHOEJK+0DKFlK2aJozAPTfVHjqCSgAeN3VePn4Gf3YNOf+WUyFp5xAjweA7/dnK16fAFXzBDVeL9skKLtPMQEn3jaJGEe3ioW/dFdcuusghNZ95A4wiQeAbb2xTYJ0dQtKvAk36+u3yx7A23lf/ePJA1Rr8beu58ADwMNSfAg8Nj50AtbO6+fcFSY2PiSA98y7Lmsq/FQAdhd2ToAi8K4Azm1jnnVz76fG2wJ4V6Xt4ubEmwGKw+sBgvHmBsqJH0wgFK/fg9x45xaawm/rDQu88ynh6zonvA4IfiJzwutHSBi4IvA2iHMSHPEujEr0PxJJ/QHtW/vfAr5e/wAAAABJRU5ErkJggg=="></button>
+  <button data-chisel="medium" class="active" title="Medium chisel (X)" aria-label="Medium chisel"><img class="chisel-icon" alt="" src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAADAAAAAwCAYAAABXAvmHAAABo0lEQVR42u2YMU7EMBBFv63tuQYdFe0WaFt6SoS4ABdYtHsBLoAQ5fa00RZuqdLtNTiBqbKys+PEIRPPWGKkdJHynv/EngT4L9kylXD6FLOtBX67faNk1AtE8JSErWjlSQmjGd65FgDQNMeLG/b7F7UJRPCp6pKwNcBvNnfJBExtK980xzM8AGNqggeA9fomOg9szfAaBGbBSwvMhpcUYIGXEmCDlxBghS8twA5fPAFueHWjxFR4AFgV/ppihV96FvK5rfNX+CVayAcXnGvhXHue56m5fg48dwIeAL6ebnH1+E5Okd1YHEDP5rDc8ADw8/lMwvcSMMEl+lslgg+LSmJuy3AnQMLvDicyiSVa1y6x8mGFEkTviwlkwVMS3Fu3XRo+ISEmMArf9X+/7j++xQWyV/714ToFz37yrwquvJFKQC18jsBk+K59SsCPCaiHHxK4gN8dTslWkYJPPYSEp3YXiZ4fS6Aq+L5Asue1wocCyalSM3yUQI3wyV2oFvjw4X7KdKkFPkogd1rUBB8KmBwJbfD9d2BQQiP84Elc4D8SS/0CJ/Xnr+WjK7YAAAAASUVORK5CYII="></button>
+  <button data-chisel="large" title="Large chisel (X)" aria-label="Large chisel"><img class="chisel-icon" alt="" src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAADAAAAAwCAYAAABXAvmHAAABz0lEQVR42tWYMW7DMAxFKaFTgRwhB8jUpWORIfDQ67QHyJADtNfpYGQQOnbx1AP0CAayuktlyBIlyzUlkwS8RAH8Pv+nLBtAeCkBjEOKV0uAP5/fMTHsBUzgYyK0kM5HRWiu8MZ00DSnYNEXobjCu9W21+CPl8sLOwdQ+FhZJ7QEeCxKnGYgq/NNc0KFaEmxcd2wM6Akwds6Hh/GJ7OWDL9VhMjgtxBACl9bADl8dQeo4dkfp+fgWQvIgWcrIBceAOCu8ishKXzpJ/GwdHiXwpeI0OBcYEwHxnTjeR4716+Bp3ZgAAB4vN/B28dnsNi21/Eg5sCu5tHU8AAAr89PKLzngEKuxaWo4d3CnPhvVEo5EIXHnCgRXUUF3+8P48Lu5xt1grr7axxA4S24KwZxgnTrVhSx6feHSdd9Qba+bj25AE2ReQzerz948tJUA+uXK8qBV1sJyILHolMSPldAMLBYTLDfSsPnCEjuNhi8XasBPydgdmC3hk8JQLfKVGy2gI/dJArvb5eRfb4aPOaAKHhfQHZsuMC7N0zC+8Bc4CcOzHWeIzz6VUJK54MI5Z5xOMFPIpR7WuQE7wpQOSK4wfvbaFIER/jkk7jCdySS+gWUwgC4T70TAQAAAABJRU5ErkJggg=="></button>
+  <div class="tb-sep" role="separator"></div>
+  <button data-tool="hammer" title="Hammer (H)" aria-label="Hammer"><img class="tool-icon" alt=""></button>
+  <button data-tool="smooth" title="Sandpaper (S)" aria-label="Sandpaper"><img class="tool-icon" alt=""></button>
+  <button data-tool="paint" title="Paint (P)" aria-label="Paint"><img class="tool-icon" alt=""></button>
+</div>
+<div id="ui">
+  <div class="head">
+    <b class="brand">Pygmalion's 100% Authentic Sculpting Experience</b>
+    <span class="links"><button type="button" class="link" id="btnTutorial">Tutorial</button>
+      <a class="link" href="index.html">Gallery →</a></span>
+  </div>
+  <div class="row"><button id="btnPublish" class="primary">Publish to gallery</button></div>
+  <div id="remixNote" class="note" hidden></div>
+  <div class="section" id="toolName" style="margin-top:4px">Chisel</div>
+  <label id="sizeRow">Brush size <input id="size" type="range" min="0.05" max="0.4" step="0.01" value="0.12"></label>
+  <label>Strength <input id="strength" type="range" min="0.1" max="1" step="0.05" value="0.5"></label>
+  <div id="paintPanel" hidden>
+    <div class="swatches">
+      <input id="paintColor" type="color" value="#c0392b" title="Pick any colour">
+      <span data-color="#c0392b"></span><span data-color="#e67e22"></span><span data-color="#f1c40f"></span>
+      <span data-color="#27ae60"></span><span data-color="#2980b9"></span><span data-color="#8e44ad"></span>
+      <span data-color="#f5f5f0"></span><span data-color="#222222"></span>
+    </div>
+    <div class="row"><button id="btnErase">Eraser (E)</button></div>
+  </div>
+  <div id="chiselPanel" hidden>
+    <label>Angle (R/F) <input id="chiselAngle" type="range" min="0" max="85" step="1" value="35" aria-label="Chisel angle"></label>
+    <div class="scale"><span>Straight in</span><span>Skimming</span></div>
+    <label>Chip shape
+      <select id="chipShape" aria-label="Chip shape">
+        <option value="random">Random</option>
+        <option value="wedge">Wedge</option>
+        <option value="block">Block</option>
+        <option value="shard">Shard</option>
+        <option value="flake">Flake</option>
+        <option value="splinter">Splinter</option>
+      </select>
+    </label>
+  </div>
+  <div id="hammerPanel" hidden>
+    <div class="row" id="hammerSizes">
+      <button data-hammer="small">Small</button>
+      <button data-hammer="medium" class="active">Medium</button>
+      <button data-hammer="large">Large</button>
+    </div>
+    <label>Depth (R/F) <input id="hammerDepth" type="range" min="0.05" max="1.2" step="0.05" value="0.3" aria-label="Hammer cut depth"></label>
+    <div class="scale"><span>Shallow</span><span>Deep</span></div>
+  </div>
+  <div class="row" id="debrisRow"><button id="btnClearDebris">Clear debris</button></div>
+  <div class="row">
+    <button id="btnUndo">Undo (Ctrl+Z)</button>
+    <button id="btnReset">Reset</button>
+  </div>
+  <div class="row"><button id="btnExport">Export STL</button></div>
+  <div class="section">Camera</div>
+  <div class="row"><button id="btnCamMode">Move camera (V)</button></div>
+  <div class="row">
+    <button data-view="front">Front</button>
+    <button data-view="side">Side</button>
+    <button data-view="top">Top</button>
+    <button data-view="home">Reset</button>
+  </div>
+  <div class="zoom-row">
+    <button id="zoomOut" title="Zoom out (−)" aria-label="Zoom out">−</button>
+    <input id="zoomSlider" type="range" min="0" max="100" step="1" value="30" aria-label="Zoom">
+    <button id="zoomIn" title="Zoom in (+)" aria-label="Zoom in">+</button>
+  </div>
+  <label>Lighting <input id="lightLevel" type="range" min="0.2" max="2" step="0.05" value="1" aria-label="Lighting brightness"></label>
+</div>
+
+<dialog id="publishDialog" aria-labelledby="pubTitle">
+  <form method="dialog" id="publishForm">
+    <h2 id="pubTitle">Publish your sculpture</h2>
+    <img id="pubThumb" alt="Preview of your sculpture">
+    <label class="field">Title <input id="pubName" maxlength="60" required autocomplete="off" placeholder="e.g. Sleeping Owl"></label>
+    <label class="field">Your name <input id="pubArtist" maxlength="40" required autocomplete="nickname" placeholder="Shown in the gallery"></label>
+    <p id="pubMode" class="note"></p>
+    <p id="pubError" class="error" role="alert"></p>
+    <div class="row">
+      <button type="button" id="pubCancel">Cancel</button>
+      <button type="submit" id="pubSubmit" class="primary">Publish</button>
+    </div>
+  </form>
+  <div id="pubDone" hidden>
+    <h2>Published!</h2>
+    <p>Your sculpture is in the gallery.</p>
+    <div class="row">
+      <a id="pubView" class="button primary" href="index.html">View it in the gallery</a>
+      <button type="button" id="pubClose">Keep sculpting</button>
+    </div>
+  </div>
+</dialog>
+
+<!-- Tutorial: Pygmalion talks from the top-right corner. -->
+<aside id="tutorial" aria-label="Tutorial" hidden>
+  <img id="tutFace" src="assets/pygmalion.png" alt="Pygmalion" width="32" height="32">
+  <div class="bubble">
+    <p id="tutText" aria-live="polite"></p>
+    <div class="tut-nav">
+      <span id="tutCount"></span>
+      <button type="button" id="tutSkip" class="tut-skip">Skip</button>
+      <button type="button" id="tutBack">Back</button>
+      <button type="button" id="tutNext" class="primary">Next</button>
+    </div>
+  </div>
+</aside>
+
+<div id="status" role="status" aria-live="polite">
+  <span id="statusText"></span>
+  <span id="aimButtons" hidden>
+    <button id="btnReroll" title="Pick a different chip (Random mode)">↻ Other chip</button>
+    <button id="btnStrike" class="primary">Strike (Enter)</button>
+    <button id="btnCancelAim">Cancel (Esc)</button>
+  </span>
+</div>
+
+<script type="importmap">
+{ "imports": {
+    "three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js",
+    "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"
+} }
+</script>
+
+<script type="module">
+import * as THREE from 'three';
+import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+import { STLExporter } from 'three/addons/exporters/STLExporter.js';
+import { SculptVolume, CHIP_SHAPES, packSculpture, unpackSculpture } from './js/engine.js';
+import { storePromise, artistName } from './js/store.js';
+import { createStoneMaterial } from './js/stone.js';
+
+// Engine (stone block, tools, meshing, save/load): js/engine.js
+
+
+// ---------------------------------------------------------------------------
+// Rendering + interaction
+// ---------------------------------------------------------------------------
+const renderer = new THREE.WebGLRenderer({ antialias: true });
+renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
+renderer.setSize(innerWidth, innerHeight);
+renderer.shadowMap.enabled = true;               // the block and chips cast shadows on the floor
+renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+document.body.appendChild(renderer.domElement);
+const canvas = renderer.domElement;
+
+const scene = new THREE.Scene();
+// Blue-grey like the walls, so no gap in the room ever shows black.
+scene.background = new THREE.Color(0x8d9ba3);
+const camera = new THREE.PerspectiveCamera(40, innerWidth / innerHeight, 0.01, 100);
+camera.position.set(3.2, 1.6, 4.0);
+
+const hemi = new THREE.HemisphereLight(0xffffff, 0x404050, 1.2);
+scene.add(hemi);
+const sun = new THREE.DirectionalLight(0xffffff, 1.6);
+sun.position.set(3, 5, 4);
+sun.castShadow = true;
+sun.shadow.mapSize.set(2048, 2048);
+Object.assign(sun.shadow.camera, { left: -4.5, right: 4.5, top: 4.5, bottom: -4.5, near: 1, far: 20 });
+sun.shadow.bias = -0.0005;
+sun.shadow.normalBias = 0.02;
+scene.add(sun);
+// Lighting slider: scales every light together (1 = normal).
+const LIGHT_BASE = { hemi: hemi.intensity, sun: sun.intensity };
+document.getElementById('lightLevel').oninput = e => {
+  const k = parseFloat(e.target.value);
+  hemi.intensity = LIGHT_BASE.hemi * k;
+  sun.intensity = LIGHT_BASE.sun * k;
+  ceilingMat.emissiveIntensity = CEILING_GLOW * k;
+};
+
+// ---------------------------------------------------------------------------
+// The studio room: plank floor and four walls, from assets/floor.png and
+// assets/wall.png (swap those files to change the look). Walls only face
+// inward, so whichever wall is between the camera and the stone is invisible
+// and never blocks the view.
+// ---------------------------------------------------------------------------
+// The block stands on a pedestal (1.3 tall), so the floor is below its base.
+const PEDESTAL_HEIGHT = 1.3, PEDESTAL_TOP = -1;
+const ROOM = { half: 7, height: 9, floorY: PEDESTAL_TOP - PEDESTAL_HEIGHT, floorTile: 2.75, wallTile: 2.75 };
+function roomTexture(url, tileSize, w, h) {
+  const tex = new THREE.TextureLoader().load(url);
+  tex.colorSpace = THREE.SRGBColorSpace;
+  tex.wrapS = tex.wrapT = THREE.RepeatWrapping;
+  tex.magFilter = THREE.NearestFilter;            // keep the pixel art crisp up close
+  tex.repeat.set(w / tileSize, h / tileSize);
+  tex.anisotropy = renderer.capabilities.getMaxAnisotropy();
+  return tex;
+}
+const room = new THREE.Group();
+const CEILING_GLOW = 0.7;
+const ceilingMat = new THREE.MeshStandardMaterial({ roughness: 1, emissive: 0xffffff, emissiveIntensity: CEILING_GLOW });
+{
+  const S = ROOM.half * 2;
+  const floor = new THREE.Mesh(new THREE.PlaneGeometry(S, S),
+    new THREE.MeshStandardMaterial({ map: roomTexture('assets/floor.png', ROOM.floorTile, S, S), roughness: 0.9 }));
+  floor.rotation.x = -Math.PI / 2;
+  floor.position.y = ROOM.floorY;
+  floor.receiveShadow = true;
+  room.add(floor);
+  // Ceiling: same texture as the walls, facing down into the room.
+  // It faces down, away from all the lights, so it also glows a little on
+  // its own (scaled by the Lighting slider) instead of going black.
+  const ceilTex = roomTexture('assets/wall.png', ROOM.wallTile, S, S);
+  const ceiling = new THREE.Mesh(new THREE.PlaneGeometry(S, S), ceilingMat);
+  ceilingMat.map = ceilTex; ceilingMat.emissiveMap = ceilTex;
+  ceiling.rotation.x = Math.PI / 2;
+  ceiling.position.y = ROOM.floorY + ROOM.height;
+  room.add(ceiling);
+  const wallMat = new THREE.MeshStandardMaterial({ map: roomTexture('assets/wall.png', ROOM.wallTile, S, ROOM.height), roughness: 1 });
+  for (let i = 0; i < 4; i++) {
+    const wall = new THREE.Mesh(new THREE.PlaneGeometry(S, ROOM.height), wallMat);
+    const a = i * Math.PI / 2;                    // each wall faces the centre of the room
+    wall.position.set(-Math.sin(a) * ROOM.half, ROOM.floorY + ROOM.height / 2, -Math.cos(a) * ROOM.half);
+    wall.rotation.y = a;
+    wall.receiveShadow = true;
+    room.add(wall);
+  }
+}
+scene.add(room);
+
+// ---------------------------------------------------------------------------
+// Pedestal, built from the drawing in the chat: a square column whose outline
+// follows the drawing row by row. PEDESTAL_PROFILE is the drawing's half-width
+// in pixels for each row (top to bottom); assets/pedestal.png is each row of
+// the drawing stretched to full width, so the carvings wrap each face.
+// ---------------------------------------------------------------------------
+const PEDESTAL_PROFILE = [39.5, 40.5, 41.5, 41.5, 42.5, 42.5, 43.5, 43.5, 43.5, 43.5, 43.5, 42.5, 42.5, 41.5, 41.5, 40.5, 38.5, 36.5, 31.5, 30.5, 28.5, 28.5, 27.5, 27.5, 26.5, 26.5, 26.5, 25.5, 25.5, 25.5, 25.5, 24.5, 24.5, 24.5, 24.5, 24.5, 24.5, 24.5, 24.5, 24.5, 24.5, 24.5, 24.5, 24.5, 24.5, 24.5, 24.5, 24.5, 24.5, 24.5, 24.5, 24.5, 25.5, 25.5, 25.5, 25.5, 26.5, 26.5, 26.5, 27.5, 27.5, 28.5, 28.5, 30.5, 31.5, 32.5, 32.5, 32.5, 33.5, 33.5, 33.5, 32.5, 32.5, 32.5, 31.5];
+function buildPedestal() {
+  const rows = PEDESTAL_PROFILE.length, px = PEDESTAL_HEIGHT / rows;
+  // Half-width at each row boundary (average of the rows either side = smoother outline).
+  const hwAt = r => px * (r === 0 ? PEDESTAL_PROFILE[0] : r === rows ? PEDESTAL_PROFILE[rows - 1]
+                         : (PEDESTAL_PROFILE[r - 1] + PEDESTAL_PROFILE[r]) / 2);
+  const pos = [], uv = [], idx = [];
+  // Four faces, each its own strip so the corners stay sharp.
+  for (const [nx, nz] of [[0, 1], [1, 0], [0, -1], [-1, 0]]) {
+    const tx = -nz, tz = nx, base = pos.length / 3;       // (tx, tz) runs along the face
+    for (let r = 0; r <= rows; r++) {
+      const h = hwAt(r), y = PEDESTAL_TOP - r * px, v = 1 - r / rows;
+      pos.push(nx * h - tx * h, y, nz * h - tz * h,  nx * h + tx * h, y, nz * h + tz * h);
+      uv.push(1, v, 0, v);
+    }
+    for (let r = 0; r < rows; r++) { const a = base + 2 * r; idx.push(a, a + 1, a + 2, a + 1, a + 3, a + 2); }
+  }
+  const geo = new THREE.BufferGeometry();
+  geo.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3));
+  geo.setAttribute('uv', new THREE.Float32BufferAttribute(uv, 2));
+  geo.setIndex(idx);
+  geo.computeVertexNormals();
+  const tex = new THREE.TextureLoader().load('assets/pedestal.png');
+  tex.colorSpace = THREE.SRGBColorSpace;
+  tex.magFilter = THREE.NearestFilter;                     // crisp carved lines
+  const group = new THREE.Group();
+  const body = new THREE.Mesh(geo, new THREE.MeshStandardMaterial({ map: tex, roughness: 0.85 }));
+  // Flat top the block stands on (a hair below it so the two don't flicker).
+  const h0 = hwAt(0);
+  const top = new THREE.Mesh(new THREE.PlaneGeometry(2 * h0, 2 * h0),
+    new THREE.MeshStandardMaterial({ color: 0xded5d2, roughness: 0.85 }));
+  top.rotation.x = -Math.PI / 2;
+  top.position.y = PEDESTAL_TOP - 0.002;
+  for (const m of [body, top]) { m.castShadow = true; m.receiveShadow = true; group.add(m); }
+  group.userData.topHalf = h0;
+  return group;
+}
+const pedestal = buildPedestal();
+scene.add(pedestal);
+// Where falling pieces land: the pedestal top if they're over it, else the floor.
+function groundAt(x, z) {
+  const h = pedestal.userData.topHalf;
+  return (Math.abs(x) <= h && Math.abs(z) <= h) ? PEDESTAL_TOP : ROOM.floorY;
+}
+
+// Stone material (photo texture + paint + bump): js/stone.js
+const clayMaterial = createStoneMaterial(renderer);
+const clay = new THREE.Mesh(new THREE.BufferGeometry(), clayMaterial);
+clay.castShadow = true;
+clay.receiveShadow = true;                        // deep cuts shade themselves
+scene.add(clay);
+
+// Upright block: 1.2 wide (x), 2 tall (y), 1 deep (z).
+const BLOCK = [1.2, 2, 1];
+const volume = new SculptVolume({ size: BLOCK, cell: 0.025 });
+
+function rebuildMesh() {
+  const { positions, normals, colors, indices } = volume.mesh();
+  const geo = new THREE.BufferGeometry();
+  geo.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+  geo.setAttribute('normal', new THREE.BufferAttribute(normals, 3));
+  geo.setAttribute('paint', new THREE.BufferAttribute(colors, 4, true));   // bytes -> 0..1 in shader
+  geo.setIndex(new THREE.BufferAttribute(indices, 1));
+  geo.computeBoundingBox();
+  geo.computeBoundingSphere();
+  clay.geometry.dispose();
+  clay.geometry = geo;
+}
+rebuildMesh();
+
+// Brush preview
+const cursor = new THREE.Mesh(
+  new THREE.SphereGeometry(1, 24, 16),
+  new THREE.MeshBasicMaterial({ color: 0x6fa0ff, wireframe: true, transparent: true, opacity: 0.35 })
+);
+cursor.visible = false;
+scene.add(cursor);
+
+// --- Tool state -------------------------------------------------------------
+// Hardness is fixed at a medium stone (it shapes brush feel and chip size).
+const tool = { mode: 'chisel', radius: 0.12, strength: 0.5, hardness: 0.5 };
+const undoStack = [];
+const MAX_UNDO = 30;
+
+const ui = {
+  hammerPanel: document.getElementById('hammerPanel'),
+  hammerDepth: document.getElementById('hammerDepth'),
+  paintPanel: document.getElementById('paintPanel'),
+  chiselPanel: document.getElementById('chiselPanel'),
+  chiselAngle: document.getElementById('chiselAngle'),
+  erase: document.getElementById('btnErase'),
+  color: document.getElementById('paintColor'),
+  size: document.getElementById('size'),
+  strength: document.getElementById('strength'),
+};
+function setMode(m) {
+  tool.mode = m;
+  ui.hammerPanel.hidden = m !== 'hammer';
+  ui.paintPanel.hidden = m !== 'paint';
+  document.querySelectorAll('#toolbar [data-tool]').forEach(b => b.classList.toggle('active', b.dataset.tool === m));
+  document.getElementById('toolName').textContent = TOOL_NAMES[m];
+  for (const [name, h] of Object.entries(heldTools)) if (name !== m) h.group.visible = false;
+  // Tool strip: highlight the chisel in use (only while the chisel tool is active).
+  document.querySelectorAll('[data-chisel]').forEach(b => b.classList.toggle('active', m === 'chisel' && b.dataset.chisel === chiselState.size));
+  ui.chiselPanel.hidden = m !== 'chisel';
+  document.getElementById('sizeRow').hidden = m === 'chisel' || m === 'hammer';   // they have S/M/L buttons
+  if (m !== 'chisel') { chiselModel.visible = false; cancelAim(); }
+  if (m !== 'hammer') { hammerModel.visible = false; cancelHammer(); }
+  previewGroup.visible = false; previewKey = '';
+  updateCursorColor();
+  if (typeof tutorialEvent === 'function' && tut) tutorialEvent('mode:' + m);
+  updateStatus();
+}
+function setRadius(r) {
+  tool.radius = Math.min(0.4, Math.max(0.05, r));
+  ui.size.value = tool.radius;
+}
+ui.size.oninput = e => setRadius(parseFloat(e.target.value));
+ui.strength.oninput = e => { tool.strength = parseFloat(e.target.value); };
+const TOOL_NAMES = { chisel: 'Chisel', hammer: 'Hammer', smooth: 'Sandpaper', paint: 'Paint' };
+document.querySelectorAll('#toolbar [data-tool]').forEach(b => b.onclick = () => setMode(b.dataset.tool));
+
+// --- Paint settings -----------------------------------------------------------
+const paintState = { rgb: [192, 57, 43], erase: false };
+function updateCursorColor() {
+  if (tool.mode === 'paint') cursor.material.color.set(paintState.erase ? 0xffffff : ui.color.value);
+  else if (tool.mode === 'smooth') cursor.material.color.set(0xf0c060);
+}
+function setPaintColor(hex) {
+  ui.color.value = hex;
+  const c = parseInt(hex.slice(1), 16);
+  paintState.rgb = [(c >> 16) & 255, (c >> 8) & 255, c & 255];
+  document.querySelectorAll('.swatches span').forEach(s => s.classList.toggle('active', s.dataset.color === hex));
+  setErase(false);
+}
+function setErase(on) {
+  paintState.erase = on;
+  ui.erase.classList.toggle('active', on);
+  updateCursorColor();
+}
+document.querySelectorAll('.swatches span').forEach(s => {
+  s.style.background = s.dataset.color;
+  s.onclick = () => setPaintColor(s.dataset.color);
+});
+ui.color.oninput = e => setPaintColor(e.target.value);
+ui.erase.onclick = () => setErase(!paintState.erase);
+setPaintColor(ui.color.value);
+
+
+document.getElementById('btnUndo').onclick = undo;
+document.getElementById('btnReset').onclick = () => {
+  pushUndo(); volume.reset(); clearDebris(); rebuildMesh();
+  remixOf = null; document.getElementById('remixNote').hidden = true;
+};
+document.getElementById('btnExport').onclick = exportSTL;
+
+// Each undo step has an id; debris created by that step is tagged with it, so
+// undoing a strike also puts the chip back instead of leaving a copy on the floor.
+let actionId = 0;
+function pushUndo() {
+  undoStack.push({ id: ++actionId, snap: volume.snapshot() });
+  if (undoStack.length > MAX_UNDO) undoStack.shift();
+}
+function undo() {
+  if (!undoStack.length) return;
+  const step = undoStack.pop();
+  volume.restore(step.snap);
+  removeDebris(d => d.step === step.id);
+  rebuildMesh();
+}
+function exportSTL() {
+  const data = new STLExporter().parse(clay, { binary: true });
+  const url = URL.createObjectURL(new Blob([data], { type: 'model/stl' }));
+  const a = Object.assign(document.createElement('a'), { href: url, download: 'sculpture.stl' });
+  a.click();
+  URL.revokeObjectURL(url);
+}
+
+// --- Picking ----------------------------------------------------------------
+const raycaster = new THREE.Raycaster();
+const pointer = new THREE.Vector2();
+let pointerDirty = false, sculpting = false;
+
+const lastClient = { x: 0, y: 0 };
+function updatePointer(e) {
+  lastClient.x = e.clientX; lastClient.y = e.clientY;
+  const r = canvas.getBoundingClientRect();
+  pointer.set(((e.clientX - r.left) / r.width) * 2 - 1, -((e.clientY - r.top) / r.height) * 2 + 1);
+}
+function pick() {
+  raycaster.setFromCamera(pointer, camera);
+  const hit = raycaster.intersectObject(clay, false)[0];
+  return hit && hit.face ? hit : null;
+}
+
+// --- Brush feel ---------------------------------------------------------------
+// Hardness does two things, like real stone:
+//  1. Each dab removes less material, so deep cuts take several passes.
+//  2. The brush lags behind the mouse ("lazy brush"), so it feels heavy and
+//     wobbles in your hand get averaged out -> steadier, smoother strokes.
+const brushPos = new THREE.Vector3();
+const brushNormal = new THREE.Vector3(0, 0, 1);
+let lastDab = null, meshDirty = false;
+
+function dabDepth() {   // used by add
+  const perDab = tool.radius * 0.2 * tool.strength;
+  return tool.mode === 'smooth' ? 0 : perDab * (1 - 0.85 * tool.hardness);
+}
+function stamp(p) {
+  if (tool.mode === 'paint') volume.paintSphere([p.x, p.y, p.z], tool.radius, paintState.rgb, 0.1 + 0.4 * tool.strength, paintState.erase);
+  else if (tool.mode === 'smooth') volume.smooth([p.x, p.y, p.z], tool.radius, 0.35 + 0.6 * tool.strength);
+  else volume.brush([p.x, p.y, p.z], tool.radius, dabDepth(), tool.mode);
+  meshDirty = true;
+}
+// Lay dabs evenly along the path from the last dab to the brush, so a fast
+// flick still leaves a continuous groove instead of dotted pits.
+function strokeTo(p) {
+  const spacing = tool.radius * 0.15;
+  const seg = p.clone().sub(lastDab);
+  const len = seg.length();
+  if (len < spacing) return;
+  seg.divideScalar(len);
+  const steps = Math.min(64, Math.floor(len / spacing));
+  for (let s = 0; s < steps; s++) {
+    lastDab.addScaledVector(seg, spacing);
+    stamp(lastDab);
+  }
+}
+// Stone resists the chisel, but not the paintbrush.
+function followRate() { return tool.mode === 'paint' ? 30 : 30 * (1 - tool.hardness) + 4; }   // 1/s: snappy clay .. heavy granite
+
+// These listeners are registered BEFORE OrbitControls, so we can switch the
+// camera controls off when a drag starts on the clay.
+canvas.addEventListener('pointerdown', e => {
+  if (e.button !== 0 || cameraMode()) return;   // camera mode: let OrbitControls handle it
+  updatePointer(e);
+  // Hammer rectangle already set: this click (anywhere) swings the hammer.
+  if (tool.mode === 'hammer' && ham.active && !ham.dragging) {
+    controls.enabled = false; ham.strikeOnUp = true; canvas.setPointerCapture(e.pointerId); return;
+  }
+  // Chisel already placed: this click (anywhere) is the strike.
+  if (tool.mode === 'chisel' && aim.active && !aim.pressing) {
+    controls.enabled = false; aim.strikeOnUp = true; canvas.setPointerCapture(e.pointerId); return;
+  }
+  const hit = pick();
+  if (!hit) return;                       // missed the clay -> let OrbitControls orbit
+  controls.enabled = false;
+  canvas.setPointerCapture(e.pointerId);
+  if (tool.mode === 'chisel') { startAim(hit); aim.pressing = true; aim.downX = e.clientX; aim.downY = e.clientY; return; }
+  if (tool.mode === 'hammer') { startHammer(hit); return; }
+  sculpting = true;
+  pushUndo();                             // one undo step per stroke
+  brushPos.copy(hit.point);
+  lastDab = hit.point.clone();
+  stamp(lastDab);
+});
+canvas.addEventListener('pointermove', e => { updatePointer(e); pointerDirty = true; });
+const endStroke = e => {
+  if (tool.mode === 'hammer' && (ham.dragging || ham.strikeOnUp)) {
+    controls.enabled = true;
+    if (ham.strikeOnUp) { hammerStrike(); return; }
+    ham.dragging = false; ham.active = true;               // rectangle set: waiting for the swing
+    updateStatus();
+    return;
+  }
+  if (tool.mode === 'chisel' && aim.active) {
+    controls.enabled = true;
+    if (aim.strikeOnUp) { strikeNow(); return; }                 // second click
+    if (aim.pressing) {
+      aim.pressing = false;
+      // Shortcut: press, drag toward where the chip should go, release = strike.
+      if (e && Math.hypot(e.clientX - aim.downX, e.clientY - aim.downY) > 12) strikeNow();
+    }
+    return;
+  }
+  if (!sculpting) return;
+  sculpting = false; controls.enabled = true; lastDab = null;
+  // Carving may have cut something free: let it fall.
+  if (tool.mode === 'smooth' && dropFloating()) rebuildMesh();
+};
+canvas.addEventListener('pointerup', endStroke);
+canvas.addEventListener('pointercancel', () => { cancelAim(); if (sculpting) endStroke(); });
+canvas.addEventListener('pointerleave', () => { cursor.visible = false; });
+
+// ---------------------------------------------------------------------------
+// Chisel
+// ---------------------------------------------------------------------------
+const V3 = THREE.Vector3;
+const chiselState = { tilt: THREE.MathUtils.degToRad(35), shapeChoice: 'random' };
+function setChiselAngle(deg) {
+  deg = Math.min(85, Math.max(0, deg));
+  ui.chiselAngle.value = deg;
+  chiselState.tilt = THREE.MathUtils.degToRad(deg);
+  // In Random mode a big angle change re-rolls the chip, since the angle sets the odds.
+  if (aim.active && chiselState.shapeChoice === 'random' && Math.abs(chiselState.tilt - aim.shapeTilt) > THREE.MathUtils.degToRad(10)) chooseChip();
+  if (aim.active) updateAimArrow();
+  updateStatus();
+}
+ui.chiselAngle.oninput = e => setChiselAngle(parseFloat(e.target.value));
+document.getElementById('chipShape').onchange = e => {
+  chiselState.shapeChoice = e.target.value;
+  if (aim.active) chooseChip();
+  updateStatus();
+};
+// aim: the chisel's current placement. pressing = button still down after
+// placing; strikeOnUp = the second click is in progress.
+const aim = { active: false, tip: new V3(), n: new V3(), t: new V3(), shape: 'wedge', seed: 1, shapeTilt: 0,
+              pressing: false, strikeOnUp: false, downX: 0, downY: 0, hitsStone: true, keyLock: null };
+let lastAimDir = null;   // the last strike's direction, reused for the next placement
+const hover = { ok: false, tip: new V3(), n: new V3() };
+let kick = 0;   // strike animation, 1 -> 0
+
+// Three chisels. Each has its own chip size and model scale; force (Strength)
+// and hardness adjust the chip a little from there.
+const CHISELS = {
+  small:  { chip: 0.07, model: 1 },    // the 3D models come from the pixel art, which already
+  medium: { chip: 0.12, model: 1 },    // shows the blade widths - so no extra scaling
+  large:  { chip: 0.19, model: 1 },
+};
+chiselState.size = 'medium';
+document.querySelectorAll('[data-chisel]').forEach(btn => btn.onclick = () => {
+  chiselState.size = btn.dataset.chisel;
+  setMode('chisel');
+  if (aim.active) updateAimArrow();
+});
+function chipSize() {
+  return CHISELS[chiselState.size].chip * (0.8 + 0.4 * tool.strength) * (1 - 0.2 * tool.hardness);
+}
+// Which of the five shapes breaks off: straight-in blows tend to knock out
+// blocks, shards and wedges; glancing blows peel off flakes and splinters.
+// Past ~65 degrees the chisel is skimming: it almost always shaves a slim splinter.
+function pickChipShape(tilt) {
+  const g = Math.sin(tilt);
+  const skim = THREE.MathUtils.smoothstep(THREE.MathUtils.radToDeg(tilt), 62, 80);
+  const weights = {
+    wedge: (0.3) * (1 - skim),
+    block: (0.3 - 0.25 * g) * (1 - skim),
+    shard: (0.3 - 0.25 * g) * (1 - skim),
+    flake: (0.05 + 0.3 * g) * (1 - 0.7 * skim),
+    splinter: 0.05 + 0.2 * g + 1.5 * skim,
+  };
+  let r = Math.random() * Object.values(weights).reduce((a, b) => a + b);
+  for (const [name, wgt] of Object.entries(weights)) if ((r -= wgt) <= 0) return name;
+  return 'wedge';
+}
+
+// 3D chisels built from the pixel art in the tool strip, Minecraft-style: every
+// pixel becomes a small coloured block. Thickness varies so they read as solid
+// tools from any angle - handle 5 blocks thick, metal ferrule 3, blade 1.
+// Each sprite: palette + one letter per pixel ('.' = empty), a per-pixel
+// thickness map, the blade tip's position and the chisel's axis in the image.
+const CHISEL_SPRITES = {"small":{"w":46,"h":46,"palette":["#340a0d","#66362c","#7e7e8f","#c2c2d1"],"px":"....................................................................................................................................................................................c............................................ccc..........................................ccccc........................................dcccc........................................dddcc........................................ddddd........................................ddddd........................................ddddd........................................ddddd........................................ddddd........................................ddddd........................................ddddd........................................ddddd........................................ddddd........................................ddddd........................................ddddd........................................ddddd.......................................dddddd......................................ddcdcdd....................................bdddddcdd....................................bbbdddcdcd...................................bbbbbddddd...................................bbbbbbbdddd..................................bbbbbbaabdd..................................bbbbbbaabbbd.................................bbbbbaabbbbbb................................bbbbbbbbbbbbb................................bbbbabbbbbbbb................................bbbaaabbbbbbb................................bbbbbaaabbbbb................................bbbbbbbaabbbb................................bbbbbbbbaabbb................................bbbbbbbbbaabb................................bbbbaabbbaabb................................bbbbaabbbaabb................................bbbbaabbbaabb................................bbbbaabbbbabb................................bbbbaabbbbaab.................................bbbaabbbbaab..................................bbbbbbbaaab....................................bbbbbaabb......................................bbbaabb........................................bbbbb.....................................","depth":"0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000001000000000000000000000000000000000000000000001110000000000000000000000000000000000000000001111100000000000000000000000000000000000000001111100000000000000000000000000000000000000001111100000000000000000000000000000000000000001111100000000000000000000000000000000000000001111100000000000000000000000000000000000000001111100000000000000000000000000000000000000001111100000000000000000000000000000000000000001111100000000000000000000000000000000000000001111100000000000000000000000000000000000000001111100000000000000000000000000000000000000001111100000000000000000000000000000000000000001111100000000000000000000000000000000000000001111100000000000000000000000000000000000000001111100000000000000000000000000000000000000001111100000000000000000000000000000000000000033311100000000000000000000000000000000000000333333100000000000000000000000000000000000053333333300000000000000000000000000000000000055533333330000000000000000000000000000000000055555333330000000000000000000000000000000000055555553333000000000000000000000000000000000055555555533000000000000000000000000000000000055555555555300000000000000000000000000000000055555555555550000000000000000000000000000000055555555555550000000000000000000000000000000055555555555550000000000000000000000000000000055555555555550000000000000000000000000000000055555555555550000000000000000000000000000000055555555555550000000000000000000000000000000055555555555550000000000000000000000000000000055555555555550000000000000000000000000000000055555555555550000000000000000000000000000000055555555555550000000000000000000000000000000055555555555550000000000000000000000000000000055555555555550000000000000000000000000000000055555555555550000000000000000000000000000000005555555555550000000000000000000000000000000000555555555550000000000000000000000000000000000005555555550000000000000000000000000000000000000055555550000000000000000000000000000000000000000555550000000000000000000000000000000000000","origin":[43.859,4.146],"axis":[-0.7091,0.7051],"length":57.58},"medium":{"w":46,"h":46,"palette":["#340a0d","#7e7e8f","#b36235","#c2c2d1"],"px":".....................................................................................................................................b............................................bbb..........................................bbbbb........................................ddbbbbb......................................dddbbbbbb....................................dddddbbbb....................................ddddddddb....................................ddddddddd....................................ddddddddd....................................ddddddddd....................................ddddddddd....................................ddddddddd....................................ddddddddd....................................ddddddddd....................................ddddddddd....................................ddddddddd.....................................dddddddd......................................ddddddd.....................................dddddddd....................................ddbdbdddd..................................cdddddbdd....................................cccdddbdbd...................................cccccddddd...................................ccccaccdddd..................................cccccacccdd..................................ccccccaccccd.................................cccccccaccccc................................cccccccaacccc................................ccccccccacccc................................cccccccaaaccc................................cccccccaaaacc................................cccccccaaaacc................................cccccccaaaacc................................cccaacccaaacc................................cccaacccccccc................................cccaacccccccc................................ccccacccccccc................................ccccacccccccc................................ccccacccccccc.................................cccacccccccc..................................ccccccccccc....................................ccccccccc......................................ccccccc........................................ccccc.....................................","depth":"0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000100000000000000000000000000000000000000000000111000000000000000000000000000000000000000000111110000000000000000000000000000000000000000111111100000000000000000000000000000000000000111111111000000000000000000000000000000000000111111111000000000000000000000000000000000000111111111000000000000000000000000000000000000111111111000000000000000000000000000000000000111111111000000000000000000000000000000000000111111111000000000000000000000000000000000000111111111000000000000000000000000000000000000111111111000000000000000000000000000000000000111111111000000000000000000000000000000000000111111111000000000000000000000000000000000000111111111000000000000000000000000000000000000111111111000000000000000000000000000000000000011111111000000000000000000000000000000000000001111111000000000000000000000000000000000000033311111000000000000000000000000000000000000333333111000000000000000000000000000000000053333333300000000000000000000000000000000000055533333330000000000000000000000000000000000055555333330000000000000000000000000000000000055555553333000000000000000000000000000000000055555555533000000000000000000000000000000000055555555555300000000000000000000000000000000055555555555550000000000000000000000000000000055555555555550000000000000000000000000000000055555555555550000000000000000000000000000000055555555555550000000000000000000000000000000055555555555550000000000000000000000000000000055555555555550000000000000000000000000000000055555555555550000000000000000000000000000000055555555555550000000000000000000000000000000055555555555550000000000000000000000000000000055555555555550000000000000000000000000000000055555555555550000000000000000000000000000000055555555555550000000000000000000000000000000055555555555550000000000000000000000000000000005555555555550000000000000000000000000000000000555555555550000000000000000000000000000000000005555555550000000000000000000000000000000000000055555550000000000000000000000000000000000000000555550000000000000000000000000000000000000","origin":[43.86,4.144],"axis":[-0.7088,0.7054],"length":57.58},"large":{"w":46,"h":46,"palette":["#272736","#340a0d","#7e7e8f","#c2c2d1"],"px":"......................................................................................c............................................ccc..........................................ccccc........................................ddccccc......................................ddddccccc....................................dddddcccccc..................................dddddddccccc.................................ddddddddddccc................................ddddddddddddc................................ddddddddddddd................................ddddddddddddd................................ddddddddddddd................................ddddddddddddd................................ddddddddddddd................................ddddddddddddd.................................dddddddddddd..................................ddddddddddd...................................dddddddddd....................................ddddddddd...................................dddddddddd..................................ddcdcdddddd................................bdddddcdd....................................bbbdddcdcd...................................bbbbbddddd...................................bbbbbbbdddd..................................bbaaabbbbdd..................................bbaabaabbbbd.................................bbbabbbaabbbb................................bbbbbbbaaabbb................................bbbbbbbbaabbb................................bbbbbbbbaabbb................................bbaabbbbaaabb................................bbaabbbbaaabb................................bbbabbbbaaabb................................bbbaabbbaaabb................................bbbaabbbabbbb................................bbbaabbbabbbb................................bbbaaabbabbbb................................bbbaaabbbbbbb................................bbbaaaabbbbbb.................................bbaaabbbbbbb..................................bbbbbbbbbbb....................................bbbbbbbbb......................................bbbbbbb........................................bbbbb.....................................","depth":"0000000000000000000000000000000000000000000000000000000000000000000000000000000000000010000000000000000000000000000000000000000000011100000000000000000000000000000000000000000011111000000000000000000000000000000000000000011111110000000000000000000000000000000000000011111111100000000000000000000000000000000000011111111111000000000000000000000000000000000011111111111100000000000000000000000000000000011111111111110000000000000000000000000000000011111111111110000000000000000000000000000000011111111111110000000000000000000000000000000011111111111110000000000000000000000000000000011111111111110000000000000000000000000000000011111111111110000000000000000000000000000000011111111111110000000000000000000000000000000011111111111110000000000000000000000000000000001111111111110000000000000000000000000000000000111111111110000000000000000000000000000000000011111111110000000000000000000000000000000000001111111110000000000000000000000000000000000033311111110000000000000000000000000000000000333333111110000000000000000000000000000000053333333300000000000000000000000000000000000055533333330000000000000000000000000000000000055555333330000000000000000000000000000000000055555553333000000000000000000000000000000000055555555533000000000000000000000000000000000055555555555300000000000000000000000000000000055555555555550000000000000000000000000000000055555555555550000000000000000000000000000000055555555555550000000000000000000000000000000055555555555550000000000000000000000000000000055555555555550000000000000000000000000000000055555555555550000000000000000000000000000000055555555555550000000000000000000000000000000055555555555550000000000000000000000000000000055555555555550000000000000000000000000000000055555555555550000000000000000000000000000000055555555555550000000000000000000000000000000055555555555550000000000000000000000000000000055555555555550000000000000000000000000000000005555555555550000000000000000000000000000000000555555555550000000000000000000000000000000000005555555550000000000000000000000000000000000000055555550000000000000000000000000000000000000000555550000000000000000000000000000000000000","origin":[43.699,3.987],"axis":[-0.708,0.7062],"length":57.58}};
+const CHISEL_LENGTH = 0.75;   // world units, blade tip to end of handle
+
+// Turn a pixel sprite into a mesh of little coloured blocks.
+// Local frame: +Y runs from the working end (origin) toward the handle,
+// X is across the tool in the drawing's plane, Z is thickness.
+//   colorAt(x, y) -> THREE.Color or null, depthAt(x, y) -> thickness in pixels,
+//   origin/axis   -> working-end point and unit axis (working end -> handle), image coords,
+//   scale         -> world units per pixel.
+function buildVoxelMesh({ w, h, colorAt, depthAt, origin, axis, scale }) {
+  const [ox, oy] = origin, [ayx, ayy] = axis;
+  const ex = ayy, ey = -ayx;                               // across axis (keeps the mapping un-mirrored)
+  const toLocal = (px, py, z) => {
+    const dx = px - ox, dy = py - oy;
+    return new V3((dx * ex + dy * ey) * scale, (dx * ayx + dy * ayy) * scale, z * scale);
+  };
+  const at = (x, y) => (x < 0 || y < 0 || x >= w || y >= h) ? 0 : depthAt(x, y);
+  const pos = [], nrm = [], col = [];
+  const quad = (a, b, c, d, center, color) => {
+    const n = new V3().subVectors(b, a).cross(new V3().subVectors(c, a)).normalize();
+    const mid = a.clone().add(c).multiplyScalar(0.5);
+    if (n.dot(mid.sub(center)) < 0) { [b, d] = [d, b]; n.negate(); }     // make it face outward
+    for (const v of [a, b, c, a, c, d]) { pos.push(v.x, v.y, v.z); nrm.push(n.x, n.y, n.z); col.push(color.r, color.g, color.b); }
+  };
+  for (let y = 0; y < h; y++) for (let x = 0; x < w; x++) {
+    const color = colorAt(x, y);
+    if (!color) continue;
+    const d = at(x, y), z0 = -d / 2, z1 = d / 2, P = toLocal, center = toLocal(x + 0.5, y + 0.5, 0);
+    quad(P(x, y, z1), P(x + 1, y, z1), P(x + 1, y + 1, z1), P(x, y + 1, z1), center, color);   // front
+    quad(P(x, y, z0), P(x + 1, y, z0), P(x + 1, y + 1, z0), P(x, y + 1, z0), center, color);   // back
+    // Sides only where the neighbouring pixel doesn't cover them.
+    if (at(x - 1, y) < d) quad(P(x, y, z0), P(x, y + 1, z0), P(x, y + 1, z1), P(x, y, z1), center, color);
+    if (at(x + 1, y) < d) quad(P(x + 1, y, z0), P(x + 1, y + 1, z0), P(x + 1, y + 1, z1), P(x + 1, y, z1), center, color);
+    if (at(x, y - 1) < d) quad(P(x, y, z0), P(x + 1, y, z0), P(x + 1, y, z1), P(x, y, z1), center, color);
+    if (at(x, y + 1) < d) quad(P(x, y + 1, z0), P(x + 1, y + 1, z0), P(x + 1, y + 1, z1), P(x, y + 1, z1), center, color);
+  }
+  const geo = new THREE.BufferGeometry();
+  geo.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3));
+  geo.setAttribute('normal', new THREE.Float32BufferAttribute(nrm, 3));
+  geo.setAttribute('color', new THREE.Float32BufferAttribute(col, 3));
+  geo.computeBoundingBox();
+  return new THREE.Mesh(geo, new THREE.MeshStandardMaterial({ vertexColors: true, roughness: 0.6, metalness: 0.1 }));
+}
+function buildSpriteChisel(sp) {
+  const colors = sp.palette.map(hex => new THREE.Color(hex));
+  return buildVoxelMesh({
+    w: sp.w, h: sp.h, origin: sp.origin, axis: sp.axis, scale: CHISEL_LENGTH / sp.length,
+    colorAt: (x, y) => { const ch = sp.px[y * sp.w + x]; return ch === '.' ? null : colors[ch.charCodeAt(0) - 97]; },
+    depthAt: (x, y) => +sp.depth[y * sp.w + x],
+  });
+}
+const chiselModel = new THREE.Group();
+const chiselVariants = {};
+for (const [size, sp] of Object.entries(CHISEL_SPRITES)) {
+  chiselVariants[size] = buildSpriteChisel(sp);
+  chiselModel.add(chiselVariants[size]);
+}
+chiselModel.visible = false;
+scene.add(chiselModel);
+const aimArrow = new THREE.ArrowHelper(new V3(1, 0, 0), new V3(), 0.2, 0xffcc55, 0.05, 0.035);
+aimArrow.visible = false;
+scene.add(aimArrow);
+
+function driveDir(n, t, tilt) {        // direction the chisel is driven (into the stone)
+  return n.clone().multiplyScalar(-Math.cos(tilt)).addScaledVector(t, Math.sin(tilt));
+}
+function placeChisel(tip, n, t) {
+  const drive = driveDir(n, t, chiselState.tilt);
+  const up = drive.clone().negate();                              // tip -> handle
+  const edge = new V3().crossVectors(n, t).normalize();           // blade edge, across the chip
+  const z = new V3().crossVectors(edge, up).normalize();
+  chiselModel.quaternion.setFromRotationMatrix(new THREE.Matrix4().makeBasis(edge, up, z));
+  chiselModel.position.copy(tip).addScaledVector(drive, Math.sin(kick * Math.PI) * 0.04 - 0.004)
+    // At skimming angles the shank lies almost flat: lift it so it rides on the surface.
+    .addScaledVector(n, 0.02 * Math.sin(chiselState.tilt) * CHISELS[chiselState.size].model);
+  for (const [size, mesh] of Object.entries(chiselVariants)) mesh.visible = size === chiselState.size;
+}
+// Smooth surface normal at a ray hit (interpolated, not the facet normal).
+function hitNormal(hit) {
+  const nA = clay.geometry.attributes.normal, n = new V3(), tmp = new V3();
+  for (const i of [hit.face.a, hit.face.b, hit.face.c]) n.add(tmp.fromBufferAttribute(nA, i));
+  return n.normalize();
+}
+// Default lean: handle tilts toward the viewer, so the chip flies away from you.
+function defaultHeading(tip, n) {
+  const t = camera.position.clone().sub(tip);
+  t.addScaledVector(n, -t.dot(n)).negate();
+  if (t.lengthSq() < 1e-6) { t.set(0, 1, 0).addScaledVector(n, -n.y); if (t.lengthSq() < 1e-6) t.set(1, 0, 0).addScaledVector(n, -n.x); }
+  return t.normalize();
+}
+// Pick the chip the next strike will produce (fixed while aiming, so the
+// preview and the real strike always match).
+function chooseChip() {
+  aim.shape = chiselState.shapeChoice === 'random' ? pickChipShape(chiselState.tilt) : chiselState.shapeChoice;
+  aim.seed = (Math.random() * 1e9) | 0;
+  aim.shapeTilt = chiselState.tilt;
+  updateStatus();
+}
+function startAim(hit) {
+  aim.active = true;
+  aim.strikeOnUp = false;
+  aim.tip.copy(hit.point);
+  aim.n.copy(hitNormal(hit));
+  // Reuse the last strike's direction when it fits this surface, so a row of
+  // strikes along the same line needs no re-aiming.
+  const reuse = lastAimDir && lastAimDir.clone().addScaledVector(aim.n, -lastAimDir.dot(aim.n));
+  if (reuse && reuse.length() > 0.5) aim.t.copy(reuse.normalize());
+  else aim.t.copy(defaultHeading(aim.tip, aim.n));
+  aim.keyLock = { x: lastClient.x, y: lastClient.y };           // pointer must move to take over aiming
+  chooseChip();
+  updateAimArrow();
+}
+function endAim() {
+  aim.active = aim.pressing = aim.strikeOnUp = false;
+  aimArrow.visible = false;
+  previewGroup.visible = false;
+  controls.enabled = true;
+  updateStatus();
+}
+function cancelAim() { if (aim.active) endAim(); }
+function strikeNow() {
+  if (!aim.active) return;
+  const shape = aim.shape, broke = strike();
+  lastAimDir = aim.t.clone();
+  endAim();
+  announce(broke ? `${SHAPE_NAMES[shape]} chip broke off.` : 'The chisel only hit air.');
+  if (broke) tutorialEvent('chiselStrike');
+}
+// Rotate the aim around the surface normal (keyboard: Q / E).
+function turnAim(deg) {
+  if (!aim.active) return;
+  aim.t.applyAxisAngle(aim.n, THREE.MathUtils.degToRad(deg)).normalize();
+  aim.keyLock = { x: lastClient.x, y: lastClient.y };
+  updateAimArrow();
+}
+// While aiming, the pointer is projected onto the surface plane and the chip
+// breaks off toward it (the handle leans the opposite way).
+const aimPlane = new THREE.Plane();
+function aimFromPointer() {
+  if (aim.keyLock) {                                  // keyboard is steering until the mouse really moves
+    if (Math.hypot(lastClient.x - aim.keyLock.x, lastClient.y - aim.keyLock.y) < 12) return;
+    aim.keyLock = null;
+  }
+  raycaster.setFromCamera(pointer, camera);
+  aimPlane.setFromNormalAndCoplanarPoint(aim.n, aim.tip);
+  const q = new V3();
+  if (!raycaster.ray.intersectPlane(aimPlane, q)) return;
+  q.sub(aim.tip);
+  q.addScaledVector(aim.n, -q.dot(aim.n));              // keep it in the surface plane
+  if (q.length() > 0.03) aim.t.copy(q).normalize();
+  updateAimArrow();
+}
+function updateAimArrow() {
+  const len = chipSize() * (1.2 + 0.9 * Math.sin(chiselState.tilt));
+  aimArrow.position.copy(aim.tip).addScaledVector(aim.n, 0.01);
+  aimArrow.setDirection(aim.t);
+  aimArrow.setLength(Math.max(0.08, len), 0.05, 0.035);
+  aimArrow.visible = true;
+}
+
+function strike() {
+  pushUndo();
+  const tilt = chiselState.tilt, size = chipSize();
+  const chip = volume.chisel(aim.tip.toArray(), aim.n.toArray(), aim.t.toArray(), tilt, size,
+                             tool.hardness, aim.seed, aim.shape);
+  // The chip pops outward and forward, ahead of the blade.
+  const launch = aim.n.clone().multiplyScalar(1.0).addScaledVector(aim.t, 1.6 * Math.sin(tilt))
+    .multiplyScalar(0.7 + 1.2 * tool.strength)
+    .add(new V3().randomDirection().multiplyScalar(0.3));
+  if (chip) spawnPiece(chip, launch, new V3().randomDirection().multiplyScalar(4 + 8 * Math.random()),
+                       { dir: aim.n, dist: size * 0.9, speed: 3 });
+  spawnDust(aim.tip, aim.n, aim.t, 24 + Math.round(30 * tool.strength));
+  dropFloating();     // the blow may have knocked something loose
+  rebuildMesh();
+  kick = 1;
+  return !!chip;
+}
+
+// ---------------------------------------------------------------------------
+// Chip preview: a glowing copy of exactly the chip the next strike removes.
+// Drawn twice - faintly through the stone, brighter where it's in view.
+// ---------------------------------------------------------------------------
+const SHAPE_NAMES = { wedge: 'Wedge', block: 'Block', shard: 'Shard', flake: 'Flake', splinter: 'Splinter' };
+const previewGroup = new THREE.Group();
+const previewBehind = new THREE.Mesh(new THREE.BufferGeometry(),
+  new THREE.MeshBasicMaterial({ color: 0xffcc55, transparent: true, opacity: 0.22, depthTest: false, depthWrite: false }));
+const previewFront = new THREE.Mesh(previewBehind.geometry,
+  new THREE.MeshBasicMaterial({ color: 0xffcc55, transparent: true, opacity: 0.5, depthWrite: false }));
+previewBehind.renderOrder = 10; previewFront.renderOrder = 11;
+previewGroup.add(previewBehind, previewFront);
+previewGroup.visible = false;
+scene.add(previewGroup);
+let previewKey = '', previewAt = 0;
+function refreshPreview() {
+  if (!aim.active) { previewGroup.visible = false; return; }
+  const size = chipSize();
+  const key = [aim.tip.toArray(), aim.t.toArray().map(x => x.toFixed(2)), chiselState.tilt.toFixed(3),
+               size.toFixed(4), tool.hardness, aim.shape, aim.seed].join('|');
+  if (key === previewKey) { previewGroup.visible = true; return; }
+  const now = performance.now();
+  if (now - previewAt < 70) return;                     // at most ~14 updates a second
+  previewKey = key; previewAt = now;
+  const p = volume.chipPreview(aim.tip.toArray(), aim.n.toArray(), aim.t.toArray(), chiselState.tilt, size,
+                               tool.hardness, aim.seed, aim.shape);
+  const hits = p.bitStone > 0;
+  showPreview(p, hits);
+  if (hits !== aim.hitsStone) { aim.hitsStone = hits; updateStatus(); }
+}
+// Put a piece's shape into the glowing preview (red = would only hit air).
+function showPreview(piece, hits) {
+  const geo = new THREE.BufferGeometry();
+  if (piece) {
+    const m = SculptVolume.meshGrid(piece);
+    geo.setAttribute('position', new THREE.BufferAttribute(m.positions, 3));
+    geo.setIndex(new THREE.BufferAttribute(m.indices, 1));
+  }
+  previewBehind.geometry.dispose();
+  previewBehind.geometry = previewFront.geometry = geo;
+  const col = hits ? 0xffcc55 : 0xff6a5a;
+  previewBehind.material.color.set(col); previewFront.material.color.set(col);
+  previewGroup.visible = !!piece;
+}
+
+// ---------------------------------------------------------------------------
+// Hammer: knocks big rectangular blocks off the stone.
+// ---------------------------------------------------------------------------
+const HAMMERS = { small: 0.22, medium: 0.4, large: 0.6 };   // block width for a single click
+const ham = { active: false, dragging: false, strikeOnUp: false, size: 'medium',
+              depth: 0.3, tip: new V3(), n: new V3(), u: new V3(), v: new V3(),
+              a0: 0, b0: 0, a1: 0, b1: 0, seed: 1, hitsStone: true };
+const hamHover = { ok: false, tip: new V3(), n: new V3() };
+let hamKick = 0;
+document.querySelectorAll('[data-hammer]').forEach(btn => btn.onclick = () => {
+  ham.size = btn.dataset.hammer;
+  document.querySelectorAll('[data-hammer]').forEach(b => b.classList.toggle('active', b === btn));
+});
+function setHammerDepth(d) {
+  ham.depth = Math.min(1.2, Math.max(0.05, Math.round(d * 20) / 20));
+  ui.hammerDepth.value = ham.depth;
+}
+ui.hammerDepth.oninput = e => setHammerDepth(parseFloat(e.target.value));
+
+// Rectangle axes on the surface. Near-flat faces snap to the block's own
+// directions, so cuts come out square with its edges.
+const FACE_DIRS = [[1, 0, 0], [-1, 0, 0], [0, 1, 0], [0, -1, 0], [0, 0, 1], [0, 0, -1]].map(a => new V3(...a));
+function hammerFrame(n0, out) {
+  const best = FACE_DIRS.reduce((b, a) => (a.dot(n0) > b.dot(n0) ? a : b));
+  out.n.copy(best.dot(n0) > Math.cos(THREE.MathUtils.degToRad(25)) ? best : n0);
+  const ref = Math.abs(out.n.y) > 0.9 ? new V3(1, 0, 0) : new V3(0, 1, 0);   // "up" on walls, x on tops
+  out.u.copy(ref).addScaledVector(out.n, -ref.dot(out.n)).normalize();
+  out.v.crossVectors(out.n, out.u).normalize();
+}
+// The rectangle in world terms: centre on the surface + half sizes.
+function hammerRect(src = ham) {
+  let a0 = src.a0, a1 = src.a1, b0 = src.b0, b1 = src.b1;
+  if (Math.abs(a1 - a0) < 0.04 && Math.abs(b1 - b0) < 0.04) {    // a click: default square
+    const half = HAMMERS[ham.size] / 2;
+    a0 = -half; a1 = half; b0 = -half; b1 = half;
+  }
+  const c = src.tip.clone().addScaledVector(src.u, (a0 + a1) / 2).addScaledVector(src.v, (b0 + b1) / 2);
+  return { c, hu: Math.max(0.03, Math.abs(a1 - a0) / 2), hv: Math.max(0.03, Math.abs(b1 - b0) / 2) };
+}
+function startHammer(hit) {
+  ham.tip.copy(hit.point);
+  hammerFrame(hitNormal(hit), ham);
+  ham.a0 = ham.b0 = ham.a1 = ham.b1 = 0;
+  ham.seed = (Math.random() * 1e9) | 0;
+  ham.dragging = true; ham.active = false; ham.strikeOnUp = false;
+  updateStatus();
+}
+function endHammer() {
+  ham.active = ham.dragging = ham.strikeOnUp = false;
+  previewGroup.visible = false; previewKey = '';
+  controls.enabled = true;
+  updateStatus();
+}
+function cancelHammer() { if (ham.active || ham.dragging) endHammer(); }
+function turnHammer(deg) {
+  if (!ham.active) return;
+  const q = new THREE.Quaternion().setFromAxisAngle(ham.n, THREE.MathUtils.degToRad(deg));
+  ham.u.applyQuaternion(q); ham.v.applyQuaternion(q);
+}
+const hamPlane = new THREE.Plane();
+function hammerDragFromPointer() {
+  raycaster.setFromCamera(pointer, camera);
+  hamPlane.setFromNormalAndCoplanarPoint(ham.n, ham.tip);
+  const q = new V3();
+  if (!raycaster.ray.intersectPlane(hamPlane, q)) return;
+  q.sub(ham.tip);
+  ham.a1 = q.dot(ham.u); ham.b1 = q.dot(ham.v);
+}
+function hammerPiece(src, apply) {
+  const { c, hu, hv } = hammerRect(src);
+  return volume.hammer(c.toArray(), src.u.toArray(), src.v.toArray(), src.n.toArray(), hu, hv, ham.depth, ham.seed, apply);
+}
+function hammerStrike() {
+  if (!ham.active) return;
+  pushUndo();
+  const { c } = hammerRect();
+  const piece = hammerPiece(ham, true);
+  if (piece) {
+    // Away from the block's centre line (so blocks off the top don't land back in their hole),
+    // plus a hop upward and a push out of the face.
+    const away = new V3(c.x, 0, c.z);
+    if (away.lengthSq() < 1e-4) away.set(Math.random() - 0.5, 0, Math.random() - 0.5);
+    away.normalize();
+    const launch = ham.n.clone().multiplyScalar(1.0 + 1.2 * tool.strength)
+      .addScaledVector(away, 0.8 + 0.6 * tool.strength)
+      .add(new V3(0, 1.2, 0))
+      .add(new V3().randomDirection().multiplyScalar(0.2));
+    spawnPiece(piece, launch, new V3().randomDirection().multiplyScalar(1.5 + 1.5 * Math.random()),
+               { dir: ham.n, dist: ham.depth + 0.08, speed: 1.5 + 1.5 * tool.strength });
+  }
+  spawnDust(c, ham.n, ham.u, 50 + Math.round(40 * tool.strength));
+  dropFloating();
+  rebuildMesh();
+  hamKick = 1;
+  endHammer();
+  announce(piece ? 'Block knocked off.' : 'The hammer only hit air.');
+  if (piece) tutorialEvent('hammerStrike');
+}
+
+// The hammer's 3D model is built from its pixel art (see TOOL_ART) once it
+// loads. It's held side-on: handle parallel to the stone, head pointing at it.
+const hammerModel = new THREE.Group();
+hammerModel.visible = false;
+scene.add(hammerModel);
+const hammerFit = { reach: 0.1, headY: 0 };   // head half-length and where the head sits along the handle
+function placeHammer(c, n, u, v) {
+  const swing = Math.sin(hamKick * Math.PI);
+  // model X (across, where the head sticks out) -> into the stone; model Y (handle) -> along the surface.
+  hammerModel.quaternion.setFromRotationMatrix(new THREE.Matrix4().makeBasis(n.clone().negate(), v, u));
+  hammerModel.position.copy(c).addScaledVector(v, -hammerFit.headY)
+    .addScaledVector(n, hammerFit.reach + 0.12 - 0.11 * swing);
+}
+
+// Every frame while the hammer tool is active.
+const hoverRect = { tip: new V3(), n: new V3(), u: new V3(), v: new V3(), a0: 0, a1: 0, b0: 0, b1: 0 };
+function updateHammer(dt) {
+  cursor.visible = false;
+  hamKick = Math.max(0, hamKick - dt * 4);
+  let src = null;
+  if (ham.dragging || ham.active) {
+    if (pointerDirty && ham.dragging) { pointerDirty = false; hammerDragFromPointer(); }
+    src = ham;
+  } else {
+    if (pointerDirty) {
+      pointerDirty = false;
+      const hit = pick();
+      hamHover.ok = !!hit;
+      if (hit) { hamHover.tip.copy(hit.point); hamHover.n.copy(hitNormal(hit)); }
+    }
+    if (hamHover.ok) { hoverRect.tip.copy(hamHover.tip); hammerFrame(hamHover.n, hoverRect); src = hoverRect; }
+  }
+  hammerModel.visible = !!src || hamKick > 0;
+  if (!src) { if (hamKick <= 0) previewGroup.visible = false; return; }
+  const { c } = hammerRect(src);
+  placeHammer(c, src.n, src.u, src.v);
+  // Preview (throttled; only rebuilt when the rectangle actually changes).
+  const r = hammerRect(src);
+  const key = ['H', r.c.toArray().map(x => x.toFixed(3)), r.hu.toFixed(3), r.hv.toFixed(3), src.u.toArray().map(x => x.toFixed(2)),
+               ham.depth, ham.size, ham.seed].join('|');
+  if (key === previewKey) return;
+  const now = performance.now();
+  if (now - previewAt < 70) return;
+  previewKey = key; previewAt = now;
+  const piece = hammerPiece(src, false);
+  showPreview(piece, !!piece);
+  const hits = !!piece;
+  if (src === ham && hits !== ham.hitsStone) { ham.hitsStone = hits; updateStatus(); }
+}
+
+// ---------------------------------------------------------------------------
+// Tool art: each tool's toolbar icon AND its 3D model come from one pixel-art
+// image. To use new art, replace the image below - a data URI, or once the
+// site is hosted a path such as 'art/hammer.png'. Nothing else needs changing:
+// the pixel size is detected, the image is trimmed and outlined for the
+// toolbar, and the 3D model is rebuilt from it.
+// Draw each tool like the chisels: transparent background, tool on the
+// diagonal, working end (hammer head / brush tip) toward the TOP-RIGHT.
+// ---------------------------------------------------------------------------
+const TOOL_ART = {
+  hammer:    'assets/tool-hammer.png',
+  sandpaper: 'assets/tool-sandpaper.png',
+  paint:     'assets/tool-paint.png',
+};
+// How each tool's model is sized, how thick it is, and how it's held.
+//   hold: 'strike' = hammer side-on over the stone, 'angled' = tip on the
+//   surface with the handle leaning back, 'flat' = lying on the surface.
+const TOOL_MODELS = {
+  hammer:    { mode: 'hammer', length: 0.55, depth: 5, hold: 'strike' },
+  sandpaper: { mode: 'smooth', length: 1,    depth: 1, hold: 'flat' },    // scaled to the brush size
+  paint:     { mode: 'paint',  length: 0.5,  depth: 3, hold: 'angled' },
+};
+
+// Load an image and return its pixels at the art's true resolution.
+function loadSprite(src) {
+  return new Promise((resolve, reject) => {
+    const img = new Image();
+    img.onload = () => {
+      const c = document.createElement('canvas');
+      c.width = img.naturalWidth; c.height = img.naturalHeight;
+      const g = c.getContext('2d', { willReadFrequently: true });
+      g.drawImage(img, 0, 0);
+      const { data, width: W, height: H } = g.getImageData(0, 0, c.width, c.height);
+      // Pixel-art block size = gcd of every run of identical pixels (works for 1x or 16x art).
+      const gcd = (a, b) => { while (b) [a, b] = [b, a % b]; return a; };
+      let k = 0;
+      const same = (i, j) => data[i] === data[j] && data[i + 1] === data[j + 1] && data[i + 2] === data[j + 2] && data[i + 3] === data[j + 3];
+      for (let y = 0; y < H && k !== 1; y += Math.max(1, (H / 64) | 0)) {
+        let run = 1;
+        for (let x = 1; x <= W; x++) {
+          if (x < W && same((y * W + x) * 4, (y * W + x - 1) * 4)) run++;
+          else { if (x < W || run < W) k = gcd(k, run); run = 1; }
+        }
+      }
+      k = k || 1;
+      const w = Math.floor(W / k), h = Math.floor(H / k);
+      // Sample block centres, then trim to the drawn area.
+      const px = [];
+      let x0 = w, y0 = h, x1 = -1, y1 = -1;
+      for (let y = 0; y < h; y++) for (let x = 0; x < w; x++) {
+        const i = ((y * k + (k >> 1)) * W + x * k + (k >> 1)) * 4;
+        const on = data[i + 3] > 127;
+        px.push(on ? [data[i], data[i + 1], data[i + 2]] : null);
+        if (on) { x0 = Math.min(x0, x); y0 = Math.min(y0, y); x1 = Math.max(x1, x); y1 = Math.max(y1, y); }
+      }
+      if (x1 < 0) return reject(new Error('empty image'));
+      const tw = x1 - x0 + 1, th = y1 - y0 + 1, pixels = [];
+      for (let y = y0; y <= y1; y++) for (let x = x0; x <= x1; x++) pixels.push(px[y * w + x]);
+      resolve({ w: tw, h: th, pixels });
+    };
+    img.onerror = reject;
+    img.src = src;
+  });
+}
+// Toolbar icon: the sprite with a 1-pixel black outline, as a crisp PNG.
+function spriteIcon(sp) {
+  const W = sp.w + 2, H = sp.h + 2, c = document.createElement('canvas');
+  c.width = W; c.height = H;
+  const g = c.getContext('2d'), img = g.createImageData(W, H);
+  const on = (x, y) => x >= 0 && y >= 0 && x < sp.w && y < sp.h && !!sp.pixels[y * sp.w + x];
+  for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) {
+    const i = (y * W + x) * 4, p = on(x - 1, y - 1) && sp.pixels[(y - 1) * sp.w + x - 1];
+    if (p) { img.data[i] = p[0]; img.data[i + 1] = p[1]; img.data[i + 2] = p[2]; img.data[i + 3] = 255; continue; }
+    let edge = false;
+    for (let dy = -1; dy <= 1 && !edge; dy++) for (let dx = -1; dx <= 1; dx++) if (on(x - 1 + dx, y - 1 + dy)) { edge = true; break; }
+    if (edge) img.data[i + 3] = 255;                      // black outline pixel
+  }
+  g.putImageData(img, 0, 0);
+  return c.toDataURL('image/png');
+}
+// Working end + axis: the long axis of the drawing, pointing at the end
+// nearest the top-right corner.
+function spriteFrame(sp) {
+  let n = 0, cx = 0, cy = 0;
+  sp.pixels.forEach((p, i) => { if (p) { cx += i % sp.w + 0.5; cy += ((i / sp.w) | 0) + 0.5; n++; } });
+  cx /= n; cy /= n;
+  let sxx = 0, syy = 0, sxy = 0;
+  sp.pixels.forEach((p, i) => { if (p) { const dx = i % sp.w + 0.5 - cx, dy = ((i / sp.w) | 0) + 0.5 - cy; sxx += dx * dx; syy += dy * dy; sxy += dx * dy; } });
+  const ang = 0.5 * Math.atan2(2 * sxy, sxx - syy);
+  let ax = Math.cos(ang), ay = Math.sin(ang);
+  if (ax - ay < 0) { ax = -ax; ay = -ay; }               // toward top-right (+x, -y)
+  let tmin = Infinity, tmax = -Infinity;
+  const pts = [];
+  sp.pixels.forEach((p, i) => {
+    if (!p) return;
+    const dx = i % sp.w + 0.5 - cx, dy = ((i / sp.w) | 0) + 0.5 - cy, t = dx * ax + dy * ay;
+    pts.push([t, -dx * ay + dy * ax]); tmin = Math.min(tmin, t); tmax = Math.max(tmax, t);
+  });
+  const tipAcross = pts.filter(q => q[0] > tmax - 2).reduce((a, q, _, arr) => a + q[1] / arr.length, 0);
+  const origin = [cx + ax * (tmax + 0.5) - ay * tipAcross, cy + ay * (tmax + 0.5) + ax * tipAcross];
+  return { origin, axis: [-ax, -ay], length: tmax - tmin + 1 };
+}
+// Build every tool's icon and model from TOOL_ART.
+const heldTools = {};        // mode -> { group, cfg } for the tools held at the brush cursor
+async function loadToolArt() {
+  for (const [name, src] of Object.entries(TOOL_ART)) {
+    const cfg = TOOL_MODELS[name];
+    let sp;
+    try { sp = await loadSprite(src); } catch (err) { console.warn('Could not load art for', name, err); continue; }
+    const btn = document.querySelector(`#toolbar [data-tool="${cfg.mode}"] img`);
+    if (btn) btn.src = spriteIcon(sp);
+    const fr = spriteFrame(sp);
+    const mesh = buildVoxelMesh({
+      w: sp.w, h: sp.h, origin: fr.origin, axis: fr.axis, scale: cfg.length / fr.length,
+      colorAt: (x, y) => { const p = sp.pixels[y * sp.w + x]; return p ? new THREE.Color().setRGB(p[0] / 255, p[1] / 255, p[2] / 255, THREE.SRGBColorSpace) : null; },
+      depthAt: (x, y) => (sp.pixels[y * sp.w + x] ? cfg.depth : 0),
+    });
+    if (cfg.hold === 'strike') {
+      // How far the head sticks out across the handle, and where along it the head sits.
+      const P = mesh.geometry.attributes.position.array, headZone = cfg.length * 0.3;
+      let reach = 0, ySum = 0, yN = 0;
+      for (let i = 0; i < P.length; i += 3) if (P[i + 1] < headZone) { reach = Math.max(reach, Math.abs(P[i])); ySum += P[i + 1]; yN++; }
+      hammerFit.reach = reach; hammerFit.headY = yN ? ySum / yN : 0;
+      hammerModel.clear(); hammerModel.add(mesh);
+    } else {
+      if (cfg.hold === 'flat') mesh.geometry.center();     // lies centred on the brush point
+      const group = new THREE.Group();
+      group.add(mesh); group.visible = false; scene.add(group);
+      heldTools[cfg.mode] = { group, cfg, thickness: cfg.depth * cfg.length / fr.length };
+    }
+  }
+}
+loadToolArt();
+
+// Place the sandpaper / paintbrush model at the brush point.
+const HOLD_TILT = THREE.MathUtils.degToRad(40);
+function placeHeldTool(mode, point, normal) {
+  const held = heldTools[mode];
+  if (!held) return;
+  const g = held.group, t = defaultHeading(point, normal);
+  if (held.cfg.hold === 'flat') {
+    // Sheet lies on the stone, sized to the brush.
+    g.scale.setScalar(tool.radius * 2.2);
+    g.quaternion.setFromRotationMatrix(new THREE.Matrix4().makeBasis(t, new V3().crossVectors(normal, t), normal));
+    g.position.copy(point).addScaledVector(normal, held.thickness * tool.radius * 2.2 / 2 + 0.004);
+  } else {
+    // Tip on the surface, handle leaning back toward you.
+    const up = driveDir(normal, t, HOLD_TILT).negate();
+    const edge = new V3().crossVectors(normal, t).normalize();
+    g.quaternion.setFromRotationMatrix(new THREE.Matrix4().makeBasis(edge, up, new V3().crossVectors(edge, up).normalize()));
+    g.position.copy(point).addScaledVector(normal, 0.01);
+  }
+  g.visible = true;
+}
+
+// ---------------------------------------------------------------------------
+// Instruction bar: always says what to do next (and is read out by screen
+// readers, since it's an aria-live region).
+// ---------------------------------------------------------------------------
+const statusText = document.getElementById('statusText');
+const aimButtons = document.getElementById('aimButtons');
+let announcement = '', announceUntil = 0;
+function announce(msg) { announcement = msg; announceUntil = performance.now() + 2500; updateStatus(); }
+function updateStatus() {
+  let html;
+  if (cameraMode()) html = 'Camera mode: drag to turn the view, scroll to zoom. Press <b>V</b> (or let go of Space) to sculpt again.';
+  else if (tool.mode === 'chisel' && aim.active) {
+    html = aim.hitsStone
+      ? `Next chip: <b>${SHAPE_NAMES[aim.shape]}</b>. Point where it should break off, then click to strike. Q/E turn · R/F steeper/shallower`
+      : 'The chisel would only hit air here. Point back at the stone, or press Esc to cancel.';
+  } else if (tool.mode === 'hammer' && ham.dragging) {
+    html = 'Drag to size the block, then let go.';
+  } else if (tool.mode === 'hammer' && ham.active) {
+    html = ham.hitsStone
+      ? 'Click or press Enter to swing the hammer. R/F shallower/deeper · Q/E turn · Esc cancel'
+      : 'That rectangle is only over air. Press Esc and try again on the stone.';
+  } else {
+    html = {
+      hammer: 'Click the stone to knock off a block, or drag a rectangle to size it. The outline shows what will break off.',
+      smooth: 'Drag over rough spots to sand them smooth.',
+      paint: 'Drag on the stone to paint. Press E for the eraser.',
+      chisel: 'Click the stone to place the chisel. (Shortcut: press, drag toward the chip, release.)',
+    }[tool.mode];
+    if (performance.now() < announceUntil) html = `${announcement} ${html}`;
+  }
+  if (statusText.innerHTML !== html) statusText.innerHTML = html;
+  const chiselReady = tool.mode === 'chisel' && aim.active, hammerReady = tool.mode === 'hammer' && ham.active;
+  aimButtons.hidden = !((chiselReady || hammerReady) && !cameraMode());
+  document.getElementById('btnReroll').hidden = !chiselReady || chiselState.shapeChoice !== 'random';
+  document.getElementById('btnStrike').textContent = hammerReady ? 'Swing (Enter)' : 'Strike (Enter)';
+}
+document.getElementById('btnStrike').onclick = () => (tool.mode === 'hammer' ? hammerStrike() : strikeNow());
+document.getElementById('btnCancelAim').onclick = () => (tool.mode === 'hammer' ? cancelHammer() : cancelAim());
+document.getElementById('btnReroll').onclick = () => { if (aim.active) chooseChip(); };
+
+// ---------------------------------------------------------------------------
+// Debris: broken-off pieces with simple rigid-body motion (gravity, spin,
+// bouncing on the floor, and being pushed out of the block if they hit it).
+// ---------------------------------------------------------------------------
+const GRAVITY = 6, MAX_DEBRIS = 60;
+const debris = [];
+const _q = new THREE.Quaternion(), _v = new V3(), _w = new V3();
+
+// eject (optional): { dir, dist, speed } - slide the piece straight out of its
+// hole before normal physics starts, so it can't snag on the walls it broke from.
+function spawnPiece(piece, vel, spin, eject = null) {
+  if (piece.count < 4) return false;                   // too small to see: dust only
+  const m = SculptVolume.meshGrid(piece);
+  if (!m.indices.length) return false;
+  const geo = new THREE.BufferGeometry();
+  geo.setAttribute('position', new THREE.BufferAttribute(m.positions, 3));
+  geo.setAttribute('normal', new THREE.BufferAttribute(m.normals, 3));
+  geo.setAttribute('paint', new THREE.BufferAttribute(m.colors, 4, true));
+  geo.setIndex(new THREE.BufferAttribute(m.indices, 1));
+  // Pivot at the centroid: the group moves/rotates, the mesh inside is offset
+  // back so its vertices keep their original (block) coordinates for texturing.
+  const c = new V3(), P = m.positions, nv = P.length / 3;
+  for (let i = 0; i < P.length; i += 3) c.x += P[i], c.y += P[i + 1], c.z += P[i + 2];
+  c.divideScalar(nv);
+  const local = new Float32Array(P.length);                 // vertex offsets from the pivot
+  for (let i = 0; i < P.length; i += 3) { local[i] = P[i] - c.x; local[i + 1] = P[i + 1] - c.y; local[i + 2] = P[i + 2] - c.z; }
+  geo.computeBoundingSphere();
+  const mesh = new THREE.Mesh(geo, clayMaterial);
+  mesh.castShadow = true;
+  mesh.position.copy(c).negate();
+  const group = new THREE.Group();
+  group.position.copy(c);
+  group.add(mesh);
+  scene.add(group);
+  // A spread of vertices used as contact points (keeps big pieces cheap).
+  const stride = Math.max(1, Math.floor(nv / 160)), probes = [];
+  for (let i = 0; i < nv; i += stride) probes.push(local[3 * i], local[3 * i + 1], local[3 * i + 2]);
+  debris.push({ group, mesh, vel, spin, probes, step: actionId, resting: false, age: 0, restFrames: 0,
+                eject: eject && { dir: eject.dir.clone().normalize(), left: eject.dist, speed: eject.speed } });
+  while (debris.length > MAX_DEBRIS) removeDebris(d => d === debris[0]);
+  return true;
+}
+function removeDebris(match) {
+  for (let i = debris.length - 1; i >= 0; i--) {
+    const d = debris[i];
+    if (!match(d)) continue;
+    scene.remove(d.group);
+    d.mesh.geometry.dispose();
+    debris.splice(i, 1);
+  }
+}
+function clearDebris() { removeDebris(() => true); }
+document.getElementById('btnClearDebris').onclick = clearDebris;
+
+// Cut loose anything no longer attached to the base and let it fall.
+function dropFloating() {
+  const pieces = volume.detachFloating();
+  for (const piece of pieces) {
+    const drift = new V3((Math.random() - 0.5) * 0.3, 0, (Math.random() - 0.5) * 0.3);
+    const spin = new V3((Math.random() - 0.5) * 1.5, 0, (Math.random() - 0.5) * 1.5);
+    if (!spawnPiece(piece, drift, spin)) {
+      const o = piece.origin, h = piece.h, n = piece.n;
+      spawnDust(new V3(o[0] + n[0] * h / 2, o[1] + n[1] * h / 2, o[2] + n[2] * h / 2), new V3(0, 1, 0), new V3(1, 0, 0), 10);
+    }
+  }
+  return pieces.length > 0;
+}
+
+const DEBRIS_LIFETIME = 5, SHRINK_TIME = 0.6;   // seconds; pieces shrink away at the end
+const UP = new V3(0, 1, 0), SIDE = new V3(1, 0, 0);
+function updateDebris(dt) {
+  for (let idx = debris.length - 1; idx >= 0; idx--) {
+    const d = debris[idx];
+    d.age += dt;
+    // After 5 seconds the piece shrinks away with a little puff of dust.
+    if (d.age > DEBRIS_LIFETIME - SHRINK_TIME) {
+      const k = Math.max(0, (DEBRIS_LIFETIME - d.age) / SHRINK_TIME);
+      d.group.scale.setScalar(Math.max(1e-4, k * k * (3 - 2 * k)));
+      if (d.age >= DEBRIS_LIFETIME) {
+        spawnDust(d.group.position, UP, SIDE, 12);
+        removeDebris(x => x === d);
+        continue;
+      }
+    }
+    if (d.resting) continue;
+
+    // 1) Ejection: slide straight out of the hole - no gravity, no collisions.
+    if (d.eject) {
+      const step = Math.min(d.eject.left, d.eject.speed * dt);
+      d.group.position.addScaledVector(d.eject.dir, step);
+      d.eject.left -= step;
+      if (d.eject.left <= 0) d.eject = null;       // clear of the stone: normal physics from here
+      continue;
+    }
+
+    // 2) Normal flight: gravity + spin.
+    d.vel.y -= GRAVITY * dt;
+    d.group.position.addScaledVector(d.vel, dt);
+    const w = d.spin.length();
+    if (w > 1e-4) { _q.setFromAxisAngle(_w.copy(d.spin).divideScalar(w), w * dt); d.group.quaternion.premultiply(_q); }
+
+    // Contacts: lowest probe vs the floor, deepest probe vs the stone block.
+    let low = Infinity, pen = 0, penAt = null;
+    const pr = d.probes;
+    for (let i = 0; i < pr.length; i += 3) {
+      _v.set(pr[i], pr[i + 1], pr[i + 2]).multiplyScalar(d.group.scale.x).applyQuaternion(d.group.quaternion).add(d.group.position);
+      if (_v.y < low) low = _v.y;
+      const f = volume.sample(_v.x, _v.y, _v.z);
+      if (f < -pen) { pen = -f; penAt = _v.clone(); }
+    }
+    // Ignore hair-thin overlaps (surfaces that merely touch) - they caused jitter.
+    if (penAt && pen > 0.3 * volume.h) {           // pushed back out of the block
+      const g = volume.gradient(penAt.x, penAt.y, penAt.z);
+      const n = _w.set(g[0], g[1], g[2]);
+      d.group.position.addScaledVector(n, pen);
+      const vn = d.vel.dot(n);
+      if (vn < 0) d.vel.addScaledVector(n, -1.3 * vn);
+      d.vel.multiplyScalar(0.85);
+      d.spin.multiplyScalar(0.85);
+      // Sitting still on the stone: let it settle instead of buzzing in place.
+      if (d.vel.lengthSq() < 0.05) { if (++d.restFrames > 15) d.resting = true; } else d.restFrames = 0;
+    }
+    const ground = groundAt(d.group.position.x, d.group.position.z);
+    if (low < ground) {                            // bounce, then scrape to a stop
+      d.group.position.y += ground - low;
+      if (d.vel.y < 0) d.vel.y *= -0.3;
+      d.vel.x *= 0.6; d.vel.z *= 0.6;
+      d.spin.multiplyScalar(0.6);
+      if (d.vel.lengthSq() < 0.01 && d.spin.lengthSq() < 0.05) d.resting = true;
+    }
+  }
+}
+
+// Stone dust: a quick puff of particles at the point of impact.
+const dustBursts = [];
+const dustMat = new THREE.PointsMaterial({ color: 0xc9bfa9, size: 0.018, transparent: true, depthWrite: false });
+function spawnDust(p, n, t, count) {
+  const pos = new Float32Array(count * 3), vel = [];
+  for (let i = 0; i < count; i++) {
+    pos[3 * i] = p.x; pos[3 * i + 1] = p.y; pos[3 * i + 2] = p.z;
+    vel.push(n.clone().multiplyScalar(0.4 + Math.random()).addScaledVector(t, Math.random() * 0.6)
+      .add(new V3().randomDirection().multiplyScalar(0.5)));
+  }
+  const geo = new THREE.BufferGeometry();
+  geo.setAttribute('position', new THREE.BufferAttribute(pos, 3));
+  const pts = new THREE.Points(geo, dustMat.clone());
+  scene.add(pts);
+  dustBursts.push({ pts, vel, age: 0 });
+}
+function updateDust(dt) {
+  for (let b = dustBursts.length - 1; b >= 0; b--) {
+    const d = dustBursts[b];
+    d.age += dt;
+    const P = d.pts.geometry.attributes.position;
+    for (let i = 0; i < d.vel.length; i++) {
+      d.vel[i].y -= 3 * dt;
+      d.vel[i].multiplyScalar(1 - 1.5 * dt);          // air drag
+      P.array[3 * i] += d.vel[i].x * dt; P.array[3 * i + 1] = Math.max(groundAt(P.array[3 * i], P.array[3 * i + 2]), P.array[3 * i + 1] + d.vel[i].y * dt); P.array[3 * i + 2] += d.vel[i].z * dt;
+    }
+    P.needsUpdate = true;
+    d.pts.material.opacity = Math.max(0, 1 - d.age / 1.2);
+    if (d.age > 1.2) { scene.remove(d.pts); d.pts.geometry.dispose(); d.pts.material.dispose(); dustBursts.splice(b, 1); }
+  }
+}
+
+// Called every frame while the chisel tool is active.
+function updateChisel(dt) {
+  cursor.visible = false;
+  kick = Math.max(0, kick - dt * 5);
+  if (aim.active) {
+    if (pointerDirty) { pointerDirty = false; aimFromPointer(); }
+    placeChisel(aim.tip, aim.n, aim.t);
+    chiselModel.visible = true;
+    refreshPreview();
+    return;
+  }
+  if (pointerDirty) {
+    pointerDirty = false;
+    const hit = pick();
+    hover.ok = !!hit;
+    if (hit) { hover.tip.copy(hit.point); hover.n.copy(hitNormal(hit)); }
+  }
+  chiselModel.visible = hover.ok;
+  if (hover.ok) {
+    const reuse = lastAimDir && lastAimDir.clone().addScaledVector(hover.n, -lastAimDir.dot(hover.n));
+    placeChisel(hover.tip, hover.n, reuse && reuse.length() > 0.5 ? reuse.normalize() : defaultHeading(hover.tip, hover.n));
+  }
+}
+
+const controls = new OrbitControls(camera, canvas);
+controls.enableDamping = true;
+controls.target.set(0, 0, 0);
+controls.minDistance = 0.5;       // close enough for fine detail
+controls.maxDistance = 6.5;         // stays inside the room
+controls.maxPolarAngle = Math.PI / 2 + 0.15;   // can look slightly up at the block, never from under the floor
+controls.zoomToCursor = true;     // scroll / pinch zooms toward the spot under the mouse
+controls.zoomSpeed = 1.4;
+// Right-drag orbits (works even when the block fills the screen),
+// middle-drag pans, Shift/Ctrl + any drag pans, wheel zooms.
+controls.mouseButtons = { LEFT: THREE.MOUSE.ROTATE, MIDDLE: THREE.MOUSE.PAN, RIGHT: THREE.MOUSE.ROTATE };
+
+// --- Camera mode (toggle with V / button, or hold Space) ---------------------
+let camToggle = false, spaceHeld = false;
+const camBtn = document.getElementById('btnCamMode');
+function cameraMode() { return camToggle || spaceHeld; }
+function refreshCamUI() {
+  camBtn.classList.toggle('active', cameraMode());
+  canvas.classList.toggle('orbiting', cameraMode());
+  if (cameraMode()) cursor.visible = false;
+  updateStatus();
+}
+camBtn.onclick = () => { camToggle = !camToggle; refreshCamUI(); };
+
+// --- Preset views with a smooth fly-to ---------------------------------------
+const VIEWS = {
+  home:  new THREE.Vector3(3.2, 1.6, 4.0),
+  front: new THREE.Vector3(0, 0, 5),
+  side:  new THREE.Vector3(5, 0, 0),
+  top:   new THREE.Vector3(0, 5, 0.001),   // tiny z offset avoids a gimbal flip
+};
+let flight = null;   // { fromPos, toPos, fromTarget, t }
+function flyTo(name) {
+  zoomGoal = null;
+  flight = { fromPos: camera.position.clone(), toPos: VIEWS[name].clone(),
+             fromTarget: controls.target.clone(), t: 0 };
+}
+document.querySelectorAll('[data-view]').forEach(b => b.onclick = () => flyTo(b.dataset.view));
+// --- Zoom buttons, slider and +/- keys ----------------------------------------
+// These glide smoothly toward a target distance. The slider uses a log scale
+// so each step feels the same whether you're far away or up close.
+const zoomSlider = document.getElementById('zoomSlider');
+const zoomRange = () => Math.log(controls.maxDistance / controls.minDistance);
+const distToSlider = d => 100 * Math.log(controls.maxDistance / d) / zoomRange();
+const sliderToDist = v => controls.maxDistance * Math.exp(-zoomRange() * v / 100);
+let zoomGoal = null;
+function zoomTo(dist) {
+  zoomGoal = Math.min(controls.maxDistance, Math.max(controls.minDistance, dist));
+  flight = null;
+}
+function zoomStep(factor) { zoomTo((zoomGoal ?? camera.position.distanceTo(controls.target)) * factor); }
+function updateZoom(dt) {
+  if (zoomGoal !== null) {
+    const off = camera.position.clone().sub(controls.target), d = off.length();
+    const nd = d + (zoomGoal - d) * (1 - Math.exp(-12 * dt));
+    camera.position.copy(controls.target).add(off.setLength(nd));
+    if (Math.abs(nd - zoomGoal) < 0.002) zoomGoal = null;
+  }
+  if (document.activeElement !== zoomSlider) zoomSlider.value = distToSlider(camera.position.distanceTo(controls.target));
+}
+document.getElementById('zoomIn').onclick = () => zoomStep(0.75);
+document.getElementById('zoomOut').onclick = () => zoomStep(1 / 0.75);
+zoomSlider.oninput = e => zoomTo(sliderToDist(+e.target.value));
+controls.addEventListener('start', () => { zoomGoal = null; });   // wheel / drag takes over
+
+function updateFlight(dt) {
+  if (!flight) return;
+  flight.t = Math.min(1, flight.t + dt / 0.6);           // 0.6 s flight
+  const k = flight.t * flight.t * (3 - 2 * flight.t);    // smoothstep ease
+  camera.position.lerpVectors(flight.fromPos, flight.toPos, k);
+  controls.target.lerpVectors(flight.fromTarget, new THREE.Vector3(0, 0, 0), k);
+  if (flight.t === 1) flight = null;
+}
+
+// --- Keyboard orbit (arrow keys) -----------------------------------------------
+const held = new Set();
+const spherical = new THREE.Spherical();
+function keyboardOrbit(dt) {
+  const speed = 1.8 * dt;                                // radians per second
+  let dTheta = 0, dPhi = 0;
+  if (held.has('ArrowLeft'))  dTheta -= speed;
+  if (held.has('ArrowRight')) dTheta += speed;
+  if (held.has('ArrowUp'))    dPhi -= speed;
+  if (held.has('ArrowDown'))  dPhi += speed;
+  if (!dTheta && !dPhi) return;
+  flight = null;
+  const offset = camera.position.clone().sub(controls.target);
+  spherical.setFromVector3(offset);
+  spherical.theta += dTheta;
+  spherical.phi = Math.min(controls.maxPolarAngle, Math.max(0.05, spherical.phi + dPhi));
+  camera.position.copy(controls.target).add(offset.setFromSpherical(spherical));
+}
+
+addEventListener('keydown', e => {
+  if (e.target instanceof HTMLSelectElement || (e.target instanceof HTMLInputElement && e.target.type !== 'range')) return;
+  if (dlg.open) return;
+  if (e.code === 'Space') { e.preventDefault(); if (!spaceHeld) { spaceHeld = true; refreshCamUI(); } return; }
+  if (e.key.startsWith('Arrow')) { e.preventDefault(); held.add(e.key); return; }
+  const views = { '1': 'front', '2': 'side', '3': 'top', '0': 'home' };
+  if (views[e.key]) { flyTo(views[e.key]); return; }
+  if (e.key === 'v') { camToggle = !camToggle; refreshCamUI(); return; }
+  if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'z') { e.preventDefault(); undo(); }
+  else if (e.key === 'h') setMode('hammer');
+  else if (e.key === 's') setMode('smooth');
+  else if (e.key === 'p') setMode('paint');
+  else if (e.key === 'x') setMode('chisel');
+  else if (e.key === 'Escape') { cancelAim(); cancelHammer(); }
+  else if (tool.mode === 'hammer' && e.key === 'Enter' && ham.active) { e.preventDefault(); hammerStrike(); }
+  else if (tool.mode === 'hammer' && e.key === 'q') turnHammer(15);
+  else if (tool.mode === 'hammer' && e.key === 'e') turnHammer(-15);
+  else if (tool.mode === 'hammer' && e.key === 'r') setHammerDepth(ham.depth - 0.05);
+  else if (tool.mode === 'hammer' && e.key === 'f') setHammerDepth(ham.depth + 0.05);
+  else if (tool.mode === 'chisel' && e.key === 'Enter' && aim.active) { e.preventDefault(); strikeNow(); }
+  else if (tool.mode === 'chisel' && e.key === 'q') turnAim(15);
+  else if (tool.mode === 'chisel' && e.key === 'e') turnAim(-15);
+  else if (tool.mode === 'chisel' && e.key === 'r') setChiselAngle(parseFloat(ui.chiselAngle.value) - 5);
+  else if (tool.mode === 'chisel' && e.key === 'f') setChiselAngle(parseFloat(ui.chiselAngle.value) + 5);
+  else if (e.key === 'e' && tool.mode === 'paint') setErase(!paintState.erase);
+  else if (e.key === '=' || e.key === '+') zoomStep(0.8);
+  else if (e.key === '-' || e.key === '_') zoomStep(1.25);
+  else if (e.key === '[') setRadius(tool.radius - 0.01);
+  else if (e.key === ']') setRadius(tool.radius + 0.01);
+});
+addEventListener('keyup', e => {
+  if (e.code === 'Space') { e.preventDefault(); spaceHeld = false; refreshCamUI(); }
+  held.delete(e.key);
+});
+addEventListener('blur', () => { held.clear(); spaceHeld = false; refreshCamUI(); });
+// Keep Space/Enter from re-clicking whichever UI button was last pressed.
+document.querySelectorAll('#ui button').forEach(b => b.addEventListener('click', () => b.blur()));
+
+addEventListener('resize', () => {
+  camera.aspect = innerWidth / innerHeight;
+  camera.updateProjectionMatrix();
+  renderer.setSize(innerWidth, innerHeight);
+});
+
+// --- Main loop: at most one pick/dab per frame keeps it responsive ----------
+// ---------------------------------------------------------------------------
+// Tutorial - Pygmalion walks new sculptors through the tools.
+// Steps with `waitFor` move on by themselves once you do the thing (Next
+// still works if you'd rather skip ahead). `cheer` steps pass after a moment.
+// `highlight` puts a pulsing ring on the control the step talks about.
+// ---------------------------------------------------------------------------
+const TUTORIAL = [
+  { text: 'Salve, I am Pygmalion.' },
+  { text: 'Welcome to my 100% Authentic Sculpting Experience.' },
+  { text: 'To begin, select the hammer tool in the top left corner of the studio.',
+    highlight: '#toolbar [data-tool="hammer"]', waitFor: 'mode:hammer' },
+  { text: 'Click and drag along the stone to shape your strike, use the R and F keys to determine the depth.',
+    highlight: '#hammerDepth', waitFor: 'hammerStrike' },
+  { text: 'Ζήτω!', cheer: true, lang: 'el' },
+  { text: 'Next, select the chisel tool.', highlight: '#toolbar [data-chisel]', waitFor: 'mode:chisel' },
+  { text: 'Click and drag along the stone to rotate your strike, use the R and F keys to change its angle.',
+    highlight: '#chiselAngle', waitFor: 'chiselStrike' },
+  { text: 'Γιούπι!', cheer: true, lang: 'el' },
+  { text: 'Use the sandpaper tool to smooth out your sculpture and the paint tool to add color.',
+    highlight: '#toolbar [data-tool="smooth"], #toolbar [data-tool="paint"]' },
+  { text: 'You can reset with a new piece of stone at any time.', highlight: '#btnReset' },
+];
+const tut = { step: -1, timer: 0, el: document.getElementById('tutorial') };
+const TUT_DONE_KEY = 'pygmalion.tutorialDone';
+function showTutorialStep(i) {
+  clearTimeout(tut.timer);
+  document.querySelectorAll('.tut-highlight').forEach(el => el.classList.remove('tut-highlight'));
+  if (i < 0 || i >= TUTORIAL.length) { endTutorial(); return; }
+  tut.step = i;
+  const st = TUTORIAL[i], text = document.getElementById('tutText');
+  text.textContent = st.text;
+  text.className = st.cheer ? 'cheer' : '';
+  text.lang = st.lang || 'en';
+  document.getElementById('tutCount').textContent = `${i + 1} / ${TUTORIAL.length}`;
+  document.getElementById('tutBack').hidden = i === 0;
+  document.getElementById('tutNext').textContent = i === TUTORIAL.length - 1 ? 'Finish' : 'Next';
+  if (st.highlight) document.querySelectorAll(st.highlight).forEach(el => el.classList.add('tut-highlight'));
+  if (st.cheer) tut.timer = setTimeout(() => showTutorialStep(i + 1), 1800);
+  tut.el.hidden = false;
+}
+function startTutorial() { showTutorialStep(0); }
+function endTutorial() {
+  clearTimeout(tut.timer);
+  tut.step = -1;
+  tut.el.hidden = true;
+  document.querySelectorAll('.tut-highlight').forEach(el => el.classList.remove('tut-highlight'));
+  try { localStorage.setItem(TUT_DONE_KEY, '1'); } catch { /* private mode */ }
+}
+// Called by the tools: 'mode:<tool>', 'hammerStrike', 'chiselStrike'.
+function tutorialEvent(name) {
+  const st = TUTORIAL[tut.step];
+  if (st && st.waitFor === name) showTutorialStep(tut.step + 1);
+}
+document.getElementById('tutNext').onclick = e => { e.currentTarget.blur(); showTutorialStep(tut.step + 1); };
+document.getElementById('tutBack').onclick = e => { e.currentTarget.blur(); showTutorialStep(tut.step - 1); };
+document.getElementById('tutSkip').onclick = () => endTutorial();
+document.getElementById('btnTutorial').onclick = e => { e.currentTarget.blur(); startTutorial(); };
+
+// ---------------------------------------------------------------------------
+// Publishing to the gallery
+// ---------------------------------------------------------------------------
+let remixOf = null;           // set when this sculpture started as someone else's
+
+// Picture for the gallery: a fixed 3/4 view of the block with tools, debris,
+// previews hidden (the room stays, as a backdrop). Copies the middle square of the canvas
+// straight after rendering (so no preserveDrawingBuffer is needed).
+function captureThumbnail(size = 512) {
+  const helpers = [cursor, chiselModel, hammerModel, previewGroup, aimArrow,
+                   ...Object.values(heldTools).map(h => h.group), ...debris.map(d => d.group), ...dustBursts.map(d => d.pts)];
+  const was = helpers.map(o => o.visible);
+  helpers.forEach(o => { o.visible = false; });
+  const savedPos = camera.position.clone(), savedTarget = controls.target.clone();
+  camera.position.set(2.7, 1.3, 3.6).setLength(5.4);
+  camera.lookAt(0, 0, 0);
+  renderer.render(scene, camera);
+  const src = renderer.domElement, side = Math.min(src.width, src.height);
+  const c = document.createElement('canvas');
+  c.width = c.height = size;
+  c.getContext('2d').drawImage(src, (src.width - side) / 2, (src.height - side) / 2, side, side, 0, 0, size, size);
+  helpers.forEach((o, i) => { o.visible = was[i]; });
+  camera.position.copy(savedPos); controls.target.copy(savedTarget); camera.lookAt(savedTarget);
+  renderer.render(scene, camera);
+  // WebP where supported (small); browsers without it hand back PNG.
+  return new Promise(res => c.toBlob(b => res(b), 'image/webp', 0.85));
+}
+
+const dlg = document.getElementById('publishDialog');
+const pub = {
+  form: document.getElementById('publishForm'), done: document.getElementById('pubDone'),
+  thumb: document.getElementById('pubThumb'), name: document.getElementById('pubName'),
+  artist: document.getElementById('pubArtist'), error: document.getElementById('pubError'),
+  mode: document.getElementById('pubMode'), submit: document.getElementById('pubSubmit'),
+  view: document.getElementById('pubView'),
+};
+let pubThumbBlob = null, pubThumbUrl = null;
+document.getElementById('btnPublish').onclick = async () => {
+  cancelAim(); cancelHammer();
+  pubThumbBlob = await captureThumbnail();
+  if (pubThumbUrl) URL.revokeObjectURL(pubThumbUrl);
+  pubThumbUrl = URL.createObjectURL(pubThumbBlob);
+  pub.thumb.src = pubThumbUrl;
+  pub.artist.value = artistName.get();
+  pub.error.textContent = '';
+  pub.form.hidden = false; pub.done.hidden = true;
+  const store = await storePromise;
+  pub.mode.textContent = store.mode === 'demo'
+    ? 'Demo mode: the gallery isn\'t connected yet, so this is saved in this browser only.'
+    : 'Everyone visiting the gallery will be able to see it.';
+  dlg.showModal();
+  (pub.name.value ? pub.artist : pub.name).focus();
+};
+document.getElementById('pubCancel').onclick = () => dlg.close();
+document.getElementById('pubClose').onclick = () => dlg.close();
+pub.form.addEventListener('submit', async e => {
+  e.preventDefault();
+  pub.error.textContent = '';
+  pub.submit.disabled = true; pub.submit.textContent = 'Publishing…';
+  try {
+    const store = await storePromise;
+    artistName.set(pub.artist.value.trim());
+    const data = await packSculpture(volume);
+    const { id } = await store.publish({ title: pub.name.value, artist: pub.artist.value, data, thumb: pubThumbBlob, remixOf });
+    pub.view.href = `index.html#sculpture=${id}`;
+    pub.form.hidden = true; pub.done.hidden = false;
+    announce('Published to the gallery.');
+  } catch (err) {
+    pub.error.textContent = err.message || 'Publishing failed. Please try again.';
+  } finally {
+    pub.submit.disabled = false; pub.submit.textContent = 'Publish';
+  }
+});
+
+// Remix: studio.html?remix=<id> starts from someone else's sculpture.
+async function loadRemix() {
+  const id = new URLSearchParams(location.search).get('remix');
+  if (!id) return;
+  const note = document.getElementById('remixNote');
+  note.hidden = false; note.textContent = 'Loading sculpture to remix…';
+  try {
+    const store = await storePromise;
+    const item = await store.get(id);
+    if (!item) throw new Error('That sculpture is no longer in the gallery.');
+    const loaded = await unpackSculpture(await store.getData(item));
+    volume.field.set(loaded.field);
+    volume.paint.set(loaded.paint);
+    rebuildMesh();
+    remixOf = id;
+    note.textContent = `Remixing “${item.title}” by ${item.artist}`;
+    announce(`Loaded “${item.title}” by ${item.artist}. Your changes will be published as a remix.`);
+  } catch (err) {
+    note.textContent = `Couldn't load the remix: ${err.message}`;
+  }
+}
+loadRemix();
+
+setMode('chisel');   // default tool
+let tutSeen = false;
+try { tutSeen = localStorage.getItem(TUT_DONE_KEY) === '1'; } catch { /* private mode */ }
+if (!tutSeen) startTutorial();
+const clock = new THREE.Clock();
+function frame() {
+  const dt = Math.min(clock.getDelta(), 0.05);
+  keyboardOrbit(dt);
+  updateFlight(dt);
+  updateZoom(dt);
+  const lim = ROOM.half - 1.5;
+  controls.target.x = Math.max(-lim, Math.min(lim, controls.target.x));
+  controls.target.z = Math.max(-lim, Math.min(lim, controls.target.z));
+  controls.target.y = Math.max(ROOM.floorY + 0.5, Math.min(ROOM.floorY + ROOM.height - 1.5, controls.target.y));
+  updateDebris(dt);
+  updateDust(dt);
+  if (announceUntil && performance.now() > announceUntil) { announceUntil = 0; updateStatus(); }
+  if (tool.mode === 'chisel') {
+    if (cameraMode()) chiselModel.visible = false; else updateChisel(dt);
+  } else if (tool.mode === 'hammer') {
+    if (cameraMode()) hammerModel.visible = false; else updateHammer(dt);
+  } else if ((pointerDirty || sculpting) && !cameraMode()) {
+    pointerDirty = false;
+    const hit = pick();
+    if (hit) brushNormal.copy(hitNormal(hit));
+    if (sculpting) {
+      // Brush eases toward the point under the mouse; harder material = more drag.
+      if (hit) brushPos.lerp(hit.point, 1 - Math.exp(-followRate() * dt));
+      strokeTo(brushPos);
+      cursor.visible = true;
+      cursor.position.copy(brushPos);
+    } else if (hit) {
+      cursor.visible = true;
+      cursor.position.copy(hit.point);
+    } else {
+      cursor.visible = false;
+    }
+    cursor.scale.setScalar(tool.radius);
+    // The tool itself (sandpaper sheet / paintbrush) follows the cursor.
+    if (cursor.visible) placeHeldTool(tool.mode, cursor.position, brushNormal);
+    else if (heldTools[tool.mode]) heldTools[tool.mode].group.visible = false;
+  }
+  if (meshDirty) { meshDirty = false; rebuildMesh(); }   // one remesh per frame, however many dabs
+  controls.update();
+  renderer.render(scene, camera);
+  requestAnimationFrame(frame);
+}
+frame();
+</script>
+</body>
+</html>

@@ -1,0 +1,269 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Gallery · Pygmalion's 100% Authentic Sculpting Experience</title>
+<meta name="description" content="Browse stone sculptures carved in Pygmalion's 100% Authentic Sculpting Experience, or make your own.">
+<style>
+  :root { --bg: #16181c; --panel: #1f2227; --line: #3a3f48; --text: #ececec; --muted: #a3a9b3;
+          --accent: #d9a832; --blue: #9cc4ff; --danger: #ff8a7a; }
+  * { box-sizing: border-box; }
+  [hidden] { display: none !important; }
+  html, body { margin: 0; background: var(--bg); color: var(--text); font-family: system-ui, sans-serif; }
+  a { color: var(--blue); }
+  button, .button { font: inherit; font-size: 14px; color: var(--text); background: #2c3038; border: 1px solid #444a55;
+                    border-radius: 8px; padding: 8px 14px; cursor: pointer; text-decoration: none; display: inline-block; }
+  button:hover, .button:hover { background: #363b45; }
+  .primary { background: var(--accent); border-color: var(--accent); color: #1d1f24; font-weight: 600; }
+  .primary:hover { background: #e6b845; }
+  button:focus-visible, .button:focus-visible, input:focus-visible, select:focus-visible, .card:focus-visible {
+    outline: 2px solid #ffcc55; outline-offset: 2px; }
+  button:disabled { opacity: .55; cursor: default; }
+
+  header { display: flex; align-items: center; justify-content: space-between; gap: 16px; flex-wrap: wrap;
+           padding: 20px clamp(16px, 4vw, 40px) 8px; }
+  header h1 { margin: 0; font-size: clamp(22px, 3vw, 30px); letter-spacing: .3px; }
+  header h1 span { color: var(--muted); font-weight: 400; }
+  .demo { margin: 0 clamp(16px, 4vw, 40px) 8px; padding: 10px 14px; border-radius: 8px; background: #2b2717;
+          border: 1px solid #5c4d1f; color: #f0dca0; font-size: 14px; }
+  .controls { display: flex; gap: 10px; flex-wrap: wrap; padding: 8px clamp(16px, 4vw, 40px) 16px; }
+  .controls input, .controls select { font: inherit; font-size: 14px; padding: 8px 10px; border-radius: 8px;
+                                      border: 1px solid #444a55; background: #2c3038; color: var(--text); }
+  .controls input { flex: 1; min-width: 180px; max-width: 420px; }
+
+  main { padding: 0 clamp(16px, 4vw, 40px) 40px; }
+  .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(190px, 1fr)); gap: 16px; }
+  .card { background: var(--panel); border: 1px solid var(--line); border-radius: 12px; overflow: hidden; cursor: pointer;
+          text-align: left; padding: 0; display: flex; flex-direction: column; color: inherit; width: 100%; }
+  .card:hover { border-color: #5a6170; background: var(--panel); }
+  .card img { width: 100%; height: auto; aspect-ratio: 1; object-fit: cover; display: block; background: #15171a; }
+  .card .meta { padding: 10px 12px 12px; display: grid; gap: 2px; }
+  .card .title { font-weight: 600; font-size: 15px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .card .by { color: var(--muted); font-size: 13px; display: flex; justify-content: space-between; gap: 8px; }
+  .card .by span:first-child { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .empty, .message { text-align: center; color: var(--muted); padding: 48px 16px; }
+  .more { display: flex; justify-content: center; padding: 24px 0 0; }
+
+  dialog { width: min(980px, calc(100vw - 24px)); max-height: calc(100vh - 24px); padding: 0; border: 1px solid var(--line);
+           border-radius: 14px; background: var(--panel); color: var(--text); }
+  dialog::backdrop { background: rgba(0,0,0,.7); }
+  .viewer { display: grid; grid-template-columns: minmax(0, 1.6fr) minmax(240px, 1fr); }
+  .stage { position: relative; aspect-ratio: 1; background: #15171a; min-height: 280px; }
+  .stage canvas { position: absolute; inset: 0; width: 100%; height: 100%; display: block; }
+  .stage .loading { position: absolute; inset: 0; display: grid; place-items: center; color: var(--muted); }
+  .info { padding: 20px; display: flex; flex-direction: column; gap: 10px; }
+  .info h2 { margin: 0; font-size: 22px; word-break: break-word; }
+  .info .by { color: var(--muted); margin: 0; }
+  .info .actions { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 6px; }
+  .info .small { display: flex; flex-wrap: wrap; gap: 8px; margin-top: auto; padding-top: 12px; }
+  .info .small button { font-size: 13px; padding: 6px 10px; }
+  .like[aria-pressed="true"] { color: #ff8fa3; border-color: #7a3a47; }
+  .hint { color: var(--muted); font-size: 13px; margin: 0; }
+  .error { color: var(--danger); font-size: 14px; margin: 0; min-height: 1em; }
+  .close { position: absolute; top: 10px; right: 10px; z-index: 2; background: rgba(20,22,26,.8); padding: 6px 11px; }
+  @media (max-width: 720px) { .viewer { grid-template-columns: 1fr; } }
+</style>
+<script type="importmap">
+{ "imports": {
+    "three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js",
+    "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"
+} }
+</script>
+</head>
+<body>
+<header>
+  <h1>Pygmalion's 100% Authentic Sculpting Experience <span>Gallery</span></h1>
+  <a class="button primary" href="studio.html">Start sculpting</a>
+</header>
+<p id="demoNote" class="demo" hidden>Demo mode: the gallery isn't connected to the online database yet, so it only shows sculptures published from this browser.</p>
+
+<div class="controls" role="search">
+  <input id="search" type="search" placeholder="Search by title or artist" aria-label="Search sculptures">
+  <select id="sort" aria-label="Sort sculptures">
+    <option value="new">Newest</option>
+    <option value="likes">Most liked</option>
+  </select>
+</div>
+
+<main>
+  <div id="grid" class="grid" aria-live="polite"></div>
+  <p id="empty" class="empty" hidden></p>
+  <div class="more"><button id="more" hidden>Load more</button></div>
+</main>
+
+<dialog id="viewer" aria-labelledby="vTitle">
+  <button class="close" id="vClose" aria-label="Close">✕</button>
+  <div class="viewer">
+    <div class="stage" id="stage"><div class="loading" id="vLoading">Loading sculpture…</div></div>
+    <div class="info">
+      <h2 id="vTitle"></h2>
+      <p class="by" id="vBy"></p>
+      <p class="hint" id="vRemix" hidden></p>
+      <div class="actions">
+        <button class="like" id="vLike" aria-pressed="false">♥ <span id="vLikes">0</span></button>
+        <a class="button primary" id="vRemixBtn" href="studio.html">Remix in the studio</a>
+      </div>
+      <p class="hint">Drag to turn it around, scroll to zoom.</p>
+      <p class="error" id="vError" role="alert"></p>
+      <div class="small">
+        <button id="vShare">Copy link</button>
+        <button id="vReport">Report</button>
+        <button id="vDelete" hidden>Delete (you made this)</button>
+      </div>
+    </div>
+  </div>
+</dialog>
+
+<script type="module">
+import { storePromise, hasLiked } from './js/store.js';
+import { unpackSculpture } from './js/engine.js';
+
+const $ = id => document.getElementById(id);
+const grid = $('grid'), empty = $('empty'), moreBtn = $('more');
+const state = { sort: 'new', search: '', page: 0, loading: false, items: new Map() };
+const store = await storePromise;
+if (store.mode === 'demo') $('demoNote').hidden = false;
+
+// --- Grid ---------------------------------------------------------------------
+const dateFmt = new Intl.DateTimeFormat(undefined, { month: 'short', day: 'numeric', year: 'numeric' });
+function card(item) {
+  const b = document.createElement('button');
+  b.className = 'card';
+  b.setAttribute('aria-label', `${item.title} by ${item.artist}, ${item.likes} likes`);
+  const img = document.createElement('img');
+  img.src = item.thumbUrl; img.alt = ''; img.loading = 'lazy'; img.width = 512; img.height = 512;
+  const meta = document.createElement('div');
+  meta.className = 'meta';
+  const t = document.createElement('div'); t.className = 'title'; t.textContent = item.title;
+  const by = document.createElement('div'); by.className = 'by';
+  const who = document.createElement('span'); who.textContent = item.artist;
+  const likes = document.createElement('span'); likes.textContent = `♥ ${item.likes}`; likes.dataset.likes = item.id;
+  by.append(who, likes); meta.append(t, by); b.append(img, meta);
+  b.onclick = () => openSculpture(item.id);
+  return b;
+}
+async function load(reset = false) {
+  if (state.loading) return;
+  state.loading = true;
+  if (reset) { state.page = 0; grid.replaceChildren(); state.items.clear(); }
+  moreBtn.disabled = true;
+  try {
+    const { items, more } = await store.list({ sort: state.sort, search: state.search, page: state.page });
+    items.forEach(it => { state.items.set(it.id, it); grid.append(card(it)); });
+    state.page++;
+    moreBtn.hidden = !more;
+    empty.hidden = grid.children.length > 0;
+    if (!grid.children.length) {
+      empty.replaceChildren();
+      if (state.search) empty.textContent = `No sculptures match “${state.search}”.`;
+      else {
+        empty.append('No sculptures yet. ');
+        const a = Object.assign(document.createElement('a'), { href: 'studio.html', textContent: 'Be the first to make one!' });
+        empty.append(a);
+      }
+    }
+  } catch (err) {
+    empty.hidden = false;
+    empty.textContent = `Couldn't load the gallery: ${err.message}`;
+  } finally {
+    state.loading = false; moreBtn.disabled = false;
+  }
+}
+let searchTimer;
+$('search').addEventListener('input', e => {
+  clearTimeout(searchTimer);
+  searchTimer = setTimeout(() => { state.search = e.target.value.trim(); load(true); }, 300);
+});
+$('sort').onchange = e => { state.sort = e.target.value; load(true); };
+moreBtn.onclick = () => load();
+
+// --- Viewer ---------------------------------------------------------------------
+const dlg = $('viewer');
+let viewer = null, current = null, lastFocus = null;
+async function openSculpture(id) {
+  lastFocus = document.activeElement;
+  $('vError').textContent = '';
+  $('vLoading').hidden = false; $('vLoading').textContent = 'Loading sculpture…';
+  if (!dlg.open) dlg.showModal();
+  if (location.hash !== `#sculpture=${id}`) history.replaceState(null, '', `#sculpture=${id}`);
+  try {
+    const item = state.items.get(id) || await store.get(id);
+    if (!item) throw new Error('This sculpture is no longer in the gallery.');
+    current = item;
+    $('vTitle').textContent = item.title;
+    $('vBy').textContent = `by ${item.artist} · ${dateFmt.format(item.createdAt)}`;
+    $('vLikes').textContent = item.likes;
+    $('vLike').setAttribute('aria-pressed', String(hasLiked(id)));
+    $('vLike').disabled = hasLiked(id);
+    $('vRemixBtn').href = `studio.html?remix=${encodeURIComponent(id)}`;
+    $('vDelete').hidden = !item.mine;
+    $('vReport').hidden = item.mine;
+    $('vReport').disabled = false; $('vReport').textContent = 'Report';
+    $('vRemix').hidden = !item.remixOf;
+    if (item.remixOf) {
+      $('vRemix').replaceChildren('Remix of ', Object.assign(document.createElement('a'),
+        { href: `#sculpture=${item.remixOf}`, textContent: 'another sculpture' }));
+    }
+    // The 3D code loads the first time a sculpture is opened.
+    const [{ createViewer }, bytes] = await Promise.all([import('./js/viewer.js'), store.getData(item)]);
+    viewer ||= createViewer($('stage'));
+    const vol = await unpackSculpture(bytes);
+    if (current !== item) return;                       // another one was opened meanwhile
+    viewer.show(vol.mesh());
+    $('vLoading').hidden = true;
+  } catch (err) {
+    $('vLoading').textContent = 'Couldn’t show this sculpture.';
+    $('vError').textContent = err.message;
+  }
+}
+function closeViewer() { if (dlg.open) dlg.close(); }
+dlg.addEventListener('close', () => {
+  viewer?.stop(); current = null;
+  history.replaceState(null, '', location.pathname + location.search);
+  lastFocus?.focus?.();
+});
+$('vClose').onclick = closeViewer;
+dlg.addEventListener('click', e => { if (e.target === dlg) closeViewer(); });   // click on the backdrop
+
+$('vLike').onclick = async () => {
+  if (!current) return;
+  const id = current.id;
+  try {
+    const n = await store.like(id);
+    if (n == null) return;
+    current.likes = n;
+    $('vLikes').textContent = n;
+    $('vLike').setAttribute('aria-pressed', 'true'); $('vLike').disabled = true;
+    document.querySelectorAll(`[data-likes="${id}"]`).forEach(el => { el.textContent = `♥ ${n}`; });
+  } catch (err) { $('vError').textContent = err.message; }
+};
+$('vShare').onclick = async () => {
+  const url = `${location.origin}${location.pathname}#sculpture=${current.id}`;
+  try { await navigator.clipboard.writeText(url); $('vShare').textContent = 'Link copied'; }
+  catch { prompt('Copy this link:', url); }
+  setTimeout(() => { $('vShare').textContent = 'Copy link'; }, 2000);
+};
+$('vReport').onclick = async () => {
+  if (!current || !confirm('Report this sculpture as inappropriate? Sculptures with several reports are hidden.')) return;
+  try { await store.report(current.id); $('vReport').textContent = 'Reported'; $('vReport').disabled = true; }
+  catch (err) { $('vError').textContent = err.message; }
+};
+$('vDelete').onclick = async () => {
+  if (!current || !confirm(`Delete “${current.title}” from the gallery? This can't be undone.`)) return;
+  try { await store.remove(current.id); closeViewer(); load(true); }
+  catch (err) { $('vError').textContent = err.message; }
+};
+
+// Links like index.html#sculpture=<id> open that sculpture directly.
+function fromHash() {
+  const m = location.hash.match(/^#sculpture=([0-9a-f-]{36})$/i);
+  if (m && current?.id !== m[1]) openSculpture(m[1]);
+}
+addEventListener('hashchange', fromHash);
+
+await load(true);
+fromHash();
+</script>
+</body>
+</html>

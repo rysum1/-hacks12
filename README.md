@@ -1,6 +1,67 @@
 # Pygmalion's Unexceptionable 100% Authentic Sculpting Experience
 
-Carve a block of stone in the browser, publish it, and browse what everyone else made.
+Carve a block of stone in the browser with a real chisel, hammer, sandpaper, and paintbrush,
+then publish what you made to a shared gallery for everyone to see.
+
+**Live:** https://pygmalion-gallery-btg9u.ondigitalocean.app/studio.html
+
+## How it works
+
+The stone block isn't a 3D model you push and pull — it's a 3D grid of numbers (a *signed
+distance field*), where each point in space stores roughly "how far is this point from the
+surface, and am I inside the stone or outside it." Carving and adding material are just simple
+math operations on that grid. Every time it changes, the visible surface is regenerated from
+scratch with an algorithm called **Surface Nets**, which walks the grid and builds a mesh
+wherever the numbers cross from "inside" to "outside." There's no mesh to break or glitch —
+just numbers, re-surfaced on demand.
+
+A chisel strike doesn't just dig a groove. It computes one of **five physically different chip
+shapes** (a wedge, a block, a shard, a flake, or a splinter), and that same shape is both the
+hole left behind and the piece of debris that breaks off. Which shape you get depends on the
+angle of the strike: hit it straight-on and you tend to knock out a wedge or block; hit it at a
+glancing angle and you shave off a thin flake or splinter, the way striking real stone would
+behave.
+
+Broken pieces can also genuinely fall off. After every strike, the engine checks — via a flood
+fill through the solid part of the grid — whether every remaining chunk of stone is still
+connected back to the base. If a piece isn't connected to anything anymore, it gets cut loose
+and falls, with its own basic tumbling physics.
+
+Paint is stored on that same 3D grid, right alongside the stone data, rather than drawn onto
+the final surface. That's why carving through a painted area exposes bare stone underneath: the
+paint for that spot was never there in the grid to begin with.
+
+Since the surface is rebuilt constantly, it never has fixed UV coordinates, so the stone photo
+texture is applied with **triplanar mapping** — projected from three directions and blended by
+which way each part of the surface faces — through a small custom shader. The same photo's
+brightness doubles as a bump map, so carved edges and chips catch the light like real rock.
+
+The 3D tool models you see in your hand (chisels, hammer, sandpaper, paintbrush) aren't
+separately modeled — they're generated automatically by reading the flat pixel-art icon for
+each tool and extruding every colored pixel into a tiny cube. Swap in new pixel art (see
+"Swapping in your tool art" below) and you get a new 3D tool for free.
+
+Saved sculptures use a small custom file format (`.sclp`): the distance field is compressed to
+one byte per grid point (only the area near the surface matters) and gzip-compressed on top,
+which is why a sculpture file is typically just 5–60 KB despite the underlying grid holding
+well over 100,000 points.
+
+### The gallery
+
+There are no user accounts. Each browser generates a random private key the first time you
+publish, and only a one-way hash of that key is ever sent to the server — enough to prove later
+that "this browser published this piece" (so you see a Delete button on your own work) without
+storing anything that identifies you. Likes and reports are tracked the same way, one per
+browser per sculpture; three reports auto-hide a piece. Remixing opens the studio pre-loaded
+with someone else's sculpture data, and a published remix links back to the original.
+
+Sculpture files and thumbnails live in **DigitalOcean Spaces**; the gallery metadata (titles,
+likes, remix lineage) lives in **DigitalOcean Managed PostgreSQL**; both are served through a
+small Node/Express API running on **DigitalOcean App Platform**. If that backend isn't reachable
+(for example, running the static files with no server), the app falls back to a local,
+browser-only demo gallery automatically, so the studio always works even offline.
+
+## Project layout
 
 ```
 index.html        Gallery (home page): browse, search, like, view in 3D, remix
@@ -11,86 +72,25 @@ js/viewer.js      3D viewer used by the gallery
 js/store.js       Gallery storage: DigitalOcean API, or browser demo mode
 server/index.js   Node API for gallery data and Spaces file storage
 server/schema.sql PostgreSQL schema
-assets/stone.jpg  Stone texture
-assets/fonts/PixelifySans-VariableFont_wght.ttf Pixelify Sans UI font
-assets/fonts/OFL-PixelifySans.txt Pixelify Sans license
+assets/           Stone texture, tool art, fonts
 ```
 
-## 1. Run it on your computer
-
-The site uses separate JavaScript files, so it has to be served over http
-(double-clicking the HTML files won't work). The VS Code static preview at
-`http://localhost:3000/-hacks12/` continues to use browser-only demo data.
-To run the API locally, use:
+## Running it locally
 
 ```
 npm install
 npm start
 ```
 
-Open `http://localhost:3001/`. Without DigitalOcean settings, it also uses
-demo mode. To test the shared gallery, configure the environment variables
-described below before starting the server.
+Then open `http://localhost:3001/`. Without any DigitalOcean environment variables set, it
+automatically runs in demo mode (a local, browser-only gallery), so it works out of the box.
 
-## 2. Connect DigitalOcean storage and database
-
-1. Create a **Spaces** bucket for the sculpture files. Keep it private; the
-  API streams public gallery files without exposing Spaces credentials.
-2. Create a **Managed PostgreSQL** database. Save its connection string and
-  download its CA certificate. Allow the App Platform service to connect.
-3. Create a **DigitalOcean App Platform** web service from this repository.
-  Use the repository root, `npm install` as the build command, and `npm start`
-  as the run command. The Node service serves both the pages and `/api`.
-4. Add these App Platform environment variables (mark credentials as secret):
-
-  ```
-  NODE_ENV=production
-  DATABASE_URL=<Managed PostgreSQL connection string>
-  DATABASE_CA_CERT=<contents of the database CA certificate>
-  SPACES_ENDPOINT=https://<region>.digitaloceanspaces.com
-  SPACES_REGION=us-east-1
-  SPACES_BUCKET=<private bucket name>
-  SPACES_ACCESS_KEY_ID=<Spaces access key>
-  SPACES_SECRET_ACCESS_KEY=<Spaces secret key>
-  ```
-
-  Create a Spaces access key for this app and keep both key values on the
-  server. Never put them in `js/config.js` or frontend code.
-5. Run `npm run db:setup` once with `DATABASE_URL` and `DATABASE_CA_CERT` set
-  and network access to the managed database. It creates the gallery tables.
-6. Deploy the App Platform service. Open its URL; the demo-mode notice should
-  disappear once the API can connect to PostgreSQL and Spaces.
-
-The app expects the database CA certificate so PostgreSQL connections are
-encrypted and verified. The private Spaces bucket is read and written only by
-the API service.
-
-## How the gallery works
-
-- **No accounts.** People publish with a display name. Each browser keeps a
-  private random key; only its SHA-256 hash is stored with the sculpture, so
-  that browser (and only it) sees a **Delete** button on its own work.
-  Clearing browser data loses that key.
-- **Likes** are one per sculpture per browser (remembered in the browser).
-- **Reports**: one report per browser key; 3 reports hide a sculpture. To
-  restore one, update its `hidden` value in PostgreSQL.
-- **Remix** opens `studio.html?remix=<id>`; the published result links back to
-  the original.
-- **Links** like `index.html#sculpture=<id>` open a sculpture directly
-  ("Copy link" in the viewer).
-- **Files**: each sculpture is a `.sclp` file (typically 5-60 KB) plus a
-  512 px WebP picture in private Spaces storage; the API streams them to the
-  gallery.
-
-### Known limits (fine for a hackathon, worth revisiting later)
-
-- Basic API rate limiting is enabled, but a determined person could still
-  spam uploads; add stronger abuse controls before a large public launch.
-- Deleted or hidden sculptures stay in storage (they're just not listed).
-- Moderation is only the report threshold; check the Table Editor now and then.
+To connect a real shared gallery, set `DATABASE_URL`, `DATABASE_CA_CERT`, and the `SPACES_*`
+variables shown in `.env.example`, then run `npm run db:setup` once to create the tables before
+starting the server.
 
 ## Swapping in your tool art
 
-See `TOOL_ART` in `studio.html`: replace an image with your pixel art (tool
-on the diagonal, working end toward the top-right, transparent background).
-The toolbar icon and 3D model are built from it automatically.
+See `TOOL_ART` in `studio.html`: replace an image with your own pixel art (tool on the
+diagonal, working end toward the top-right, transparent background). The toolbar icon and the
+3D model in your hand are both built from it automatically.

@@ -4,6 +4,7 @@ Carve a block of stone in the browser with a real chisel, hammer, sandpaper, and
 then publish what you made to a shared gallery for everyone to see.
 
 **Live:** https://pygmalion-gallery-btg9u.ondigitalocean.app/studio.html
+**Demo:** 
 
 ## How it works
 

@@ -2,76 +2,87 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<title>Pygmalion's 100% Authentic Sculpting Experience</title>
+<title>Pygmalion's Unexceptionable 100% Authentic Sculpting Experience</title>
 <style>
-  html, body { margin: 0; height: 100%; overflow: hidden; background: #1d1f24;
-               font-family: system-ui, sans-serif; color: #eee; }
+  :root { --bg: #171916; --panel: #20221e; --line: #41443b; --text: #efeee8; --muted: #a8aa9f;
+          --accent: #d2aa58; --focus: #e4c276; --rail: #c4cec2; }
+  html, body { margin: 0; height: 100%; overflow: hidden; background: linear-gradient(145deg, #20221d, #151714 58%);
+               font-family: 'Avenir Next', 'Segoe UI', sans-serif; color: var(--text); }
   canvas { display: block; touch-action: none; }
   [hidden] { display: none !important; }
   #ui { position: absolute; top: 12px; left: 92px; width: 258px; padding: 12px 14px;
         max-height: calc(100vh - 48px); overflow-y: auto; box-sizing: border-box;
-        background: rgba(20,22,26,.88); border-radius: 10px; font-size: 13px;
-        line-height: 1.6; user-select: none; }
+        background: rgba(25,27,23,.9); border: 1px solid rgba(196, 190, 158, .2); border-radius: 8px;
+        box-shadow: 0 12px 38px rgba(0,0,0,.28); backdrop-filter: blur(14px); font-size: 13px;
+        line-height: 1.55; user-select: none; }
   #ui label { display: flex; justify-content: space-between; align-items: center; gap: 8px; }
   #ui input[type=range] { width: 115px; }
   .row { display: flex; gap: 6px; margin: 6px 0; }
-  button { flex: 1; background: #2c3038; color: #eee; border: 1px solid #444a55;
-           border-radius: 6px; padding: 5px; cursor: pointer; font-size: 12px; }
-  button:hover { background: #363b45; }
-  button.active { background: #4a7bd0; border-color: #4a7bd0; }
+  button { flex: 1; background: #2b2e28; color: var(--text); border: 1px solid #494c42;
+           border-radius: 5px; padding: 6px; cursor: pointer; font-size: 12px;
+           transition: background-color .15s ease, border-color .15s ease, transform .15s ease; }
+  button:hover { background: #393c33; border-color: #696b5d; }
+  button.active { background: #52634f; border-color: #8fa182; }
   .scale { display: flex; justify-content: space-between; font-size: 11px; opacity: .55;
            margin: -4px 0 4px 105px; }
   .tools { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; margin: 6px 0; }
   .tools .wide { grid-column: span 2; }
   /* Vertical tool strip: light blue, icons carry a 1-pixel black outline so they pop. */
   #toolbar { position: absolute; top: 12px; left: 12px; display: flex; flex-direction: column; gap: 4px;
-             padding: 6px; background: #b3d4f0; border-radius: 10px; }
+             padding: 6px; background: var(--rail); border: 1px solid rgba(255,255,255,.34); border-radius: 8px;
+             box-shadow: 0 10px 28px rgba(0,0,0,.26); }
   #toolbar button { width: 58px; height: 58px; flex: none; padding: 0; display: grid; place-items: center;
                     background: transparent; border: 2px solid transparent; border-radius: 8px; }
-  #toolbar button:hover { background: #9dc5e8; }
-  #toolbar button.active { background: #86b6e0; border-color: #1f4f8f; }
-  #toolbar button:focus-visible { outline-color: #1f4f8f; }
+  #toolbar button:hover { background: #b3c1af; }
+  #toolbar button.active { background: #a0b29d; border-color: #52634f; }
+  #toolbar button:focus-visible { outline-color: #52634f; }
   .chisel-icon { width: 48px; height: 48px; image-rendering: pixelated; display: block; }
   /* Generated icons show at their true pixel size (1 art pixel = 1 screen pixel) so they stay crisp. */
   .tool-icon { width: auto; height: auto; max-width: 54px; max-height: 54px; image-rendering: pixelated; display: block; }
-  .tb-sep { height: 2px; margin: 2px 6px; background: #86b6e0; border-radius: 1px; }
+  .tb-sep { height: 1px; margin: 3px 6px; background: #9da995; border-radius: 1px; }
   .swatches { display: flex; align-items: center; gap: 5px; flex-wrap: wrap; margin: 4px 0; }
   .swatches span { width: 18px; height: 18px; border-radius: 50%; cursor: pointer;
                    border: 2px solid transparent; box-sizing: border-box; }
   .swatches span.active { border-color: #fff; }
   #paintColor { width: 30px; height: 24px; padding: 0; border: none; background: none; cursor: pointer; }
-  select { width: 125px; background: #2c3038; color: #eee; border: 1px solid #444a55;
-           border-radius: 6px; padding: 3px; font-size: 12px; }
+  select { width: 125px; background: #252821; color: var(--text); border: 1px solid #494c42;
+           border-radius: 5px; padding: 5px; font-size: 12px; }
   #status { position: absolute; left: 50%; bottom: 16px; transform: translateX(-50%);
             max-width: min(760px, calc(100vw - 32px)); padding: 10px 14px; border-radius: 10px;
-            background: rgba(20,22,26,.9); font-size: 14px; line-height: 1.45; text-align: center;
+            background: rgba(25,27,23,.92); border: 1px solid rgba(196, 190, 158, .2);
+            box-shadow: 0 8px 28px rgba(0,0,0,.26); backdrop-filter: blur(12px);
+            font-size: 14px; line-height: 1.45; text-align: center;
             display: flex; flex-wrap: wrap; gap: 8px 12px; align-items: center; justify-content: center; }
   #status button { flex: none; font-size: 13px; padding: 6px 10px; }
-  #status button.primary { background: #d9a832; border-color: #d9a832; color: #1d1f24; font-weight: 600; }
-  #status b { color: #ffcc55; }
-  button:focus-visible, select:focus-visible, input:focus-visible { outline: 2px solid #ffcc55; outline-offset: 2px; }
+  #status button.primary { background: var(--accent); border-color: var(--accent); color: #1d1f24; font-weight: 600; }
+  #status b { color: var(--focus); }
+  button:focus-visible, select:focus-visible, input:focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; }
   .head { display: flex; flex-direction: column; gap: 4px; }
   .head .brand { font-family: Georgia, 'Times New Roman', serif; font-size: 15px; line-height: 1.25; }
   .head .links { display: flex; gap: 12px; }
-  button.link { background: none; border: none; padding: 0; flex: none; color: #9cc4ff; font-size: 12px; cursor: pointer; }
+  #generalContent { padding-right: 32px; }
+  #btnToggleControls { position: absolute; top: 0; right: 0; z-index: 2; width: 26px; height: 26px; padding: 0;
+                       display: grid; place-items: center; flex: none; border-color: rgba(196, 190, 158, .3); }
+  button.link { background: none; border: none; padding: 0; flex: none; color: #c3d0c5; font-size: 12px; cursor: pointer; }
   button.link:hover { background: none; text-decoration: underline; }
-  a.link { color: #9cc4ff; font-size: 12px; text-decoration: none; }
+  a.link { color: #c3d0c5; font-size: 12px; text-decoration: none; }
   a.link:hover { text-decoration: underline; }
-  button.primary, a.button.primary { background: #d9a832; border-color: #d9a832; color: #1d1f24; font-weight: 600; }
-  button.primary:hover { background: #e6b845; }
+  button.primary, a.button.primary { background: var(--accent); border-color: var(--accent); color: #1d1f24; font-weight: 600; }
+  button.primary:hover { background: #e0b962; }
   button:disabled { opacity: .6; cursor: default; }
   .note { font-size: 12px; opacity: .75; margin: 4px 0; }
   .error { color: #ff8a7a; font-size: 13px; min-height: 1em; margin: 4px 0; }
-  a.button { display: inline-block; text-align: center; text-decoration: none; border-radius: 6px; padding: 6px 10px;
-             font-size: 12px; border: 1px solid #444a55; flex: 1; }
-  dialog { background: #1f2227; color: #eee; border: 1px solid #3a3f48; border-radius: 12px; padding: 18px 20px;
-           width: min(360px, calc(100vw - 32px)); font-family: system-ui, sans-serif; }
+  a.button { display: inline-block; text-align: center; text-decoration: none; border-radius: 5px; padding: 7px 10px;
+             font-size: 12px; border: 1px solid #494c42; flex: 1; }
+  dialog { background: var(--panel); color: var(--text); border: 1px solid var(--line); border-radius: 8px; padding: 18px 20px;
+           width: min(360px, calc(100vw - 32px)); font-family: 'Avenir Next', 'Segoe UI', sans-serif;
+           box-shadow: 0 24px 70px rgba(0,0,0,.46); }
   dialog::backdrop { background: rgba(0,0,0,.55); }
   dialog h2 { margin: 0 0 10px; font-size: 18px; }
   #pubThumb { width: 100%; aspect-ratio: 1; border-radius: 8px; background: #15171a; display: block; margin-bottom: 10px; }
   .field { display: flex; flex-direction: column; gap: 4px; font-size: 13px; margin: 8px 0; }
-  .field input { font: inherit; font-size: 14px; padding: 7px 9px; border-radius: 6px; border: 1px solid #444a55;
-                 background: #2c3038; color: #eee; }
+  .field input { font: inherit; font-size: 14px; padding: 8px 10px; border-radius: 5px; border: 1px solid #494c42;
+                 background: #252821; color: var(--text); }
   /* Tutorial: parchment speech bubble + framed pixel portrait, top right. */
   #tutorial { position: absolute; top: 14px; right: 14px; display: flex; align-items: flex-start; gap: 10px;
               max-width: min(470px, calc(100vw - 360px)); min-width: 280px; z-index: 5; }
@@ -87,9 +98,12 @@
   #tutorial .bubble::after  { left: -10px; border-width: 8px 11px 8px 0;  border-color: transparent #f6eedb transparent transparent; margin-top: 2px; }
   #tutText { margin: 0 0 10px; font-size: 16px; line-height: 1.45; }
   #tutText.cheer { font-size: 26px; font-weight: bold; text-align: center; letter-spacing: .5px; }
-  .tut-nav { display: flex; align-items: center; gap: 6px; font-family: system-ui, sans-serif; }
-  .tut-nav #tutCount { flex: 1; font-size: 12px; color: #7a6a4c; }
-  .tut-nav button { flex: none; font-size: 12px; padding: 5px 10px; background: #e8dcc0; color: #2b2418; border-color: #c9b58a; }
+  .tut-nav { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); align-items: center; gap: 6px;
+             font-family: system-ui, sans-serif; }
+  .tut-nav #tutCount { grid-column: 1 / -1; min-width: 0; flex: none; color: #7a6a4c; font-size: 12px;
+                       text-align: center; white-space: nowrap; }
+  .tut-nav button { flex: none; min-width: 0; white-space: nowrap; font-size: 12px; padding: 5px 6px;
+                    background: #e8dcc0; color: #2b2418; border-color: #c9b58a; }
   .tut-nav button:hover { background: #dfd0ad; }
   .tut-nav button.primary { background: #8a5a2b; border-color: #8a5a2b; color: #fff8e8; }
   .tut-nav button.primary:hover { background: #9d6a37; }
@@ -98,8 +112,23 @@
   .tut-highlight { position: relative; z-index: 1; animation: tutPulse 1.2s ease-in-out infinite; }
   @keyframes tutPulse { 0%, 100% { box-shadow: 0 0 0 0 rgba(255, 204, 85, .9); } 50% { box-shadow: 0 0 0 5px rgba(255, 204, 85, .25); } }
   @media (prefers-reduced-motion: reduce) { .tut-highlight { animation: none; box-shadow: 0 0 0 3px #ffcc55; } }
-  @media (max-width: 700px) { #tutorial { left: 14px; right: 14px; top: auto; bottom: 110px; max-width: none; }
-                              #tutFace { width: 96px; height: 96px; } }
+  @media (max-width: 700px) {
+    #ui { left: 76px; right: 10px; top: auto; bottom: 100px; width: auto; max-height: min(40dvh, 340px); padding: 10px; }
+    #generalContent .head .links { flex-wrap: wrap; }
+    #toolbar { left: 10px; top: 10px; padding: 4px; gap: 3px; }
+    #toolbar button { width: 52px; height: 52px; }
+    .chisel-icon { width: 44px; height: 44px; }
+    .tool-icon { max-width: 48px; max-height: 48px; }
+    #tutorial { left: 82px; right: 10px; top: 10px; bottom: auto; max-width: none; min-width: 0; gap: 8px; }
+    #tutFace { width: 80px; height: 80px; }
+    #tutorial .bubble { margin-top: 8px; padding: 10px 12px; }
+    #tutText { font-size: 14px; }
+    #status { bottom: 10px; max-width: calc(100vw - 20px); padding: 8px 10px; gap: 6px 8px; }
+    .tut-nav { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 4px; }
+    .tut-nav #tutCount { grid-column: 1 / -1; min-width: 0; flex: none; white-space: nowrap; text-align: center; }
+    .tut-nav button { min-width: 0; padding: 5px 4px; white-space: nowrap; }
+  }
+  @media (prefers-reduced-motion: reduce) { button { transition: none; } }
   .zoom-row { display: flex; align-items: center; gap: 6px; margin: 6px 0; }
   .zoom-row button { flex: none; width: 34px; font-size: 17px; line-height: 1; padding: 4px 0; }
   .zoom-row input { flex: 1; min-width: 0; }
@@ -107,6 +136,39 @@
   canvas.orbiting { cursor: grab; }
   canvas.orbiting:active { cursor: grabbing; }
   .hint { opacity: .65; font-size: 12px; margin-top: 6px; }
+  #generalPanel { position: fixed; top: 12px; left: 50%; transform: translateX(-50%); z-index: 8;
+                  width: min(620px, calc(100vw - 320px)); box-sizing: border-box; margin: 0; padding: 12px 16px;
+                  background: rgba(25,27,23,.94); border: 1px solid rgba(196, 190, 158, .28); border-radius: 8px;
+                  box-shadow: 0 12px 38px rgba(0,0,0,.32); backdrop-filter: blur(14px); }
+  #generalContent { padding-right: 34px; }
+  #generalPanel .head { flex-direction: row; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
+  #generalPanel .head .brand { flex: 1 1 260px; font-size: 17px; }
+  #generalPanel .head .links { flex: none; align-items: center; gap: 10px; }
+  #generalPanel .row { margin: 10px 0 0; }
+  #generalPanel .row button { width: 100%; }
+  #btnToggleControls { position: absolute; top: 8px; right: 8px; width: 28px; height: 28px; padding: 0;
+                       display: grid; place-items: center; flex: none; border-color: rgba(196, 190, 158, .38); }
+  #generalPanel.general-collapsed { top: 0; width: 42px; height: 40px; min-height: 0; padding: 5px; overflow: hidden;
+                                     border-top: 0; border-radius: 0 0 8px 8px;
+                                     display: flex; align-items: center; justify-content: center; }
+  #generalPanel.general-collapsed #generalContent { display: none; }
+  #generalPanel.general-collapsed #btnToggleControls { position: static; transform: rotate(180deg); }
+  #ui { top: 116px; left: auto; right: 12px; width: 300px; max-height: calc(100dvh - 132px); }
+  body.general-open #tutorial { top: 116px; right: auto; left: 92px; width: min(320px, calc(100vw - 420px)); max-width: none; }
+  @media (max-width: 700px) {
+    #generalPanel { top: 8px; left: 82px; right: 10px; transform: none; width: auto;
+                    max-height: min(34dvh, 280px); padding: 10px 44px 10px 12px; overflow-y: auto; }
+    #generalPanel .head { flex-direction: column; align-items: flex-start; gap: 6px; }
+    #generalPanel .head .brand { flex: none; font-size: 16px; }
+    #generalPanel .head .links { flex-wrap: wrap; }
+    #generalPanel.general-collapsed { top: 0; left: 50%; right: auto; transform: translateX(-50%);
+                       width: 42px; height: 40px; max-height: none; padding: 5px; overflow: hidden;
+                       border-top: 0; border-radius: 0 0 8px 8px; }
+    #generalPanel.general-collapsed #btnToggleControls { position: static; }
+    #ui { left: 76px; right: 10px; top: auto; bottom: 100px; width: auto; max-height: min(34dvh, 280px); padding: 8px 10px; }
+    #tutorial { left: 82px; right: 10px; top: 58px; bottom: auto; max-width: none; min-width: 0; gap: 8px; }
+    body.general-open #tutorial { top: 160px; }
+  }
 </style>
 </head>
 <body>
@@ -120,13 +182,20 @@
   <button data-tool="smooth" title="Sandpaper (S)" aria-label="Sandpaper"><img class="tool-icon" alt=""></button>
   <button data-tool="paint" title="Paint (P)" aria-label="Paint"><img class="tool-icon" alt=""></button>
 </div>
-<div id="ui">
-  <div class="head">
-    <b class="brand">Pygmalion's 100% Authentic Sculpting Experience</b>
-    <span class="links"><button type="button" class="link" id="btnTutorial">Tutorial</button>
-      <a class="link" href="index.html">Gallery →</a></span>
+<div id="generalPanel">
+  <button type="button" id="btnToggleControls" class="general-toggle" aria-expanded="true" aria-controls="generalContent"
+          aria-label="Hide title and gallery options" title="Hide title and gallery options">⌃</button>
+  <div id="generalContent">
+    <div class="head">
+      <b class="brand">Pygmalion's Unexceptionable 100% Authentic Sculpting Experience</b>
+      <span class="links"><button type="button" class="link" id="btnTutorial">Tutorial</button>
+        <a class="link" href="index.html">Gallery →</a></span>
+    </div>
+    <div class="row"><button id="btnPublish" class="primary">Publish to gallery</button></div>
   </div>
-  <div class="row"><button id="btnPublish" class="primary">Publish to gallery</button></div>
+</div>
+<div id="ui">
+  <div id="artControls">
   <div id="remixNote" class="note" hidden></div>
   <div class="section" id="toolName" style="margin-top:4px">Chisel</div>
   <label id="sizeRow">Brush size <input id="size" type="range" min="0.05" max="0.4" step="0.01" value="0.12"></label>
@@ -183,6 +252,7 @@
     <button id="zoomIn" title="Zoom in (+)" aria-label="Zoom in">+</button>
   </div>
   <label>Lighting <input id="lightLevel" type="range" min="0.2" max="2" step="0.05" value="1" aria-label="Lighting brightness"></label>
+  </div>
 </div>
 
 <dialog id="publishDialog" aria-labelledby="pubTitle">
@@ -441,7 +511,10 @@ function setMode(m) {
   ui.hammerPanel.hidden = m !== 'hammer';
   ui.paintPanel.hidden = m !== 'paint';
   document.querySelectorAll('#toolbar [data-tool]').forEach(b => b.classList.toggle('active', b.dataset.tool === m));
-  document.getElementById('toolName').textContent = TOOL_NAMES[m];
+  const toolName = m === 'chisel'
+    ? `${chiselState.size[0].toUpperCase()}${chiselState.size.slice(1)} Chisel`
+    : TOOL_NAMES[m];
+  document.getElementById('toolName').textContent = toolName;
   for (const [name, h] of Object.entries(heldTools)) if (name !== m) h.group.visible = false;
   // Tool strip: highlight the chisel in use (only while the chisel tool is active).
   document.querySelectorAll('[data-chisel]').forEach(b => b.classList.toggle('active', m === 'chisel' && b.dataset.chisel === chiselState.size));
@@ -1577,6 +1650,26 @@ addEventListener('keyup', e => {
 });
 addEventListener('blur', () => { held.clear(); spaceHeld = false; refreshCamUI(); });
 // Keep Space/Enter from re-clicking whichever UI button was last pressed.
+const generalPanel = document.getElementById('generalPanel');
+const controlsToggle = document.getElementById('btnToggleControls');
+const mobileGeneralPanel = matchMedia('(max-width: 700px), (pointer: coarse)');
+let generalManuallyToggled = false;
+function setControlsCollapsed(collapsed) {
+  generalPanel.classList.toggle('general-collapsed', collapsed);
+  document.body.classList.toggle('general-open', !collapsed);
+  controlsToggle.setAttribute('aria-expanded', String(!collapsed));
+  controlsToggle.setAttribute('aria-label', collapsed ? 'Show title and gallery options' : 'Hide title and gallery options');
+  controlsToggle.title = collapsed ? 'Show title and gallery options' : 'Hide title and gallery options';
+  controlsToggle.textContent = collapsed ? '⌄' : '⌃';
+}
+setControlsCollapsed(mobileGeneralPanel.matches);
+controlsToggle.addEventListener('click', () => {
+  generalManuallyToggled = true;
+  setControlsCollapsed(!generalPanel.classList.contains('general-collapsed'));
+});
+mobileGeneralPanel.addEventListener('change', event => {
+  if (!generalManuallyToggled) setControlsCollapsed(event.matches);
+});
 document.querySelectorAll('#ui button').forEach(b => b.addEventListener('click', () => b.blur()));
 
 addEventListener('resize', () => {
@@ -1594,7 +1687,7 @@ addEventListener('resize', () => {
 // ---------------------------------------------------------------------------
 const TUTORIAL = [
   { text: 'Salve, I am Pygmalion.' },
-  { text: 'Welcome to my 100% Authentic Sculpting Experience.' },
+  { text: 'Welcome to my Unexceptionable 100% Authentic Sculpting Experience.' },
   { text: 'To begin, select the hammer tool in the top left corner of the studio.',
     highlight: '#toolbar [data-tool="hammer"]', waitFor: 'mode:hammer' },
   { text: 'Click and drag along the stone to shape your strike, use the R and F keys to determine the depth.',

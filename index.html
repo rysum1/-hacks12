@@ -3,57 +3,61 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Gallery · Pygmalion's 100% Authentic Sculpting Experience</title>
-<meta name="description" content="Browse stone sculptures carved in Pygmalion's 100% Authentic Sculpting Experience, or make your own.">
+<title>Gallery · Pygmalion's Unexceptionable 100% Authentic Sculpting Experience</title>
+<meta name="description" content="Browse stone sculptures carved in Pygmalion's Unexceptionable 100% Authentic Sculpting Experience, or make your own.">
 <style>
-  :root { --bg: #16181c; --panel: #1f2227; --line: #3a3f48; --text: #ececec; --muted: #a3a9b3;
-          --accent: #d9a832; --blue: #9cc4ff; --danger: #ff8a7a; }
+    :root { --bg: #171916; --panel: #20221e; --line: #3a3d35; --text: #efeee8; --muted: #a8aa9f;
+      --accent: #d2aa58; --blue: #b7c8be; --danger: #ff8a7a; --surface: #2a2d27; }
   * { box-sizing: border-box; }
   [hidden] { display: none !important; }
-  html, body { margin: 0; background: var(--bg); color: var(--text); font-family: system-ui, sans-serif; }
+  html, body { margin: 0; min-height: 100%; background: linear-gradient(180deg, #20221d 0, var(--bg) 320px); color: var(--text);
+               font-family: 'Avenir Next', 'Segoe UI', sans-serif; }
   a { color: var(--blue); }
-  button, .button { font: inherit; font-size: 14px; color: var(--text); background: #2c3038; border: 1px solid #444a55;
-                    border-radius: 8px; padding: 8px 14px; cursor: pointer; text-decoration: none; display: inline-block; }
-  button:hover, .button:hover { background: #363b45; }
+  button, .button { font: inherit; font-size: 14px; color: var(--text); background: var(--surface); border: 1px solid #464940;
+                    border-radius: 6px; padding: 9px 14px; cursor: pointer; text-decoration: none; display: inline-block;
+                    transition: background-color .16s ease, border-color .16s ease, transform .16s ease; }
+  button:hover, .button:hover { background: #363930; border-color: #686b5d; }
   .primary { background: var(--accent); border-color: var(--accent); color: #1d1f24; font-weight: 600; }
   .primary:hover { background: #e6b845; }
   button:focus-visible, .button:focus-visible, input:focus-visible, select:focus-visible, .card:focus-visible {
-    outline: 2px solid #ffcc55; outline-offset: 2px; }
+    outline: 2px solid #e4c276; outline-offset: 3px; }
   button:disabled { opacity: .55; cursor: default; }
 
   header { display: flex; align-items: center; justify-content: space-between; gap: 16px; flex-wrap: wrap;
-           padding: 20px clamp(16px, 4vw, 40px) 8px; }
-  header h1 { margin: 0; font-size: clamp(22px, 3vw, 30px); letter-spacing: .3px; }
-  header h1 span { color: var(--muted); font-weight: 400; }
-  .demo { margin: 0 clamp(16px, 4vw, 40px) 8px; padding: 10px 14px; border-radius: 8px; background: #2b2717;
-          border: 1px solid #5c4d1f; color: #f0dca0; font-size: 14px; }
-  .controls { display: flex; gap: 10px; flex-wrap: wrap; padding: 8px clamp(16px, 4vw, 40px) 16px; }
-  .controls input, .controls select { font: inherit; font-size: 14px; padding: 8px 10px; border-radius: 8px;
-                                      border: 1px solid #444a55; background: #2c3038; color: var(--text); }
+             padding: 22px clamp(16px, 4vw, 48px) 18px; border-bottom: 1px solid rgba(173, 169, 143, .18); }
+          header h1 { margin: 0; max-width: 900px; font-family: Georgia, 'Times New Roman', serif; font-size: 27px; font-weight: 600; line-height: 1.2; }
+          header h1 span { color: var(--accent); font-weight: 400; }
+          header .button { flex: none; }
+          .demo { margin: 16px clamp(16px, 4vw, 48px) 0; padding: 11px 14px; border-radius: 4px; background: #292719;
+            border: 1px solid #5b512d; border-left: 3px solid var(--accent); color: #f0e2bb; font-size: 14px; }
+          .controls { display: flex; gap: 10px; flex-wrap: wrap; padding: 18px clamp(16px, 4vw, 48px) 20px; }
+          .controls input, .controls select { font: inherit; font-size: 14px; min-height: 42px; padding: 8px 12px; border-radius: 6px;
+                      border: 1px solid #41443b; background: #22241f; color: var(--text); }
   .controls input { flex: 1; min-width: 180px; max-width: 420px; }
 
-  main { padding: 0 clamp(16px, 4vw, 40px) 40px; }
-  .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(190px, 1fr)); gap: 16px; }
-  .card { background: var(--panel); border: 1px solid var(--line); border-radius: 12px; overflow: hidden; cursor: pointer;
-          text-align: left; padding: 0; display: flex; flex-direction: column; color: inherit; width: 100%; }
-  .card:hover { border-color: #5a6170; background: var(--panel); }
+    main { padding: 0 clamp(16px, 4vw, 48px) 48px; }
+    .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 18px; }
+    .card { background: var(--panel); border: 1px solid var(--line); border-radius: 8px; overflow: hidden; cursor: pointer;
+      text-align: left; padding: 0; display: flex; flex-direction: column; color: inherit; width: 100%;
+      transition: transform .18s ease, border-color .18s ease, box-shadow .18s ease; }
+    .card:hover { border-color: #77705b; background: var(--panel); transform: translateY(-2px); box-shadow: 0 8px 24px rgba(0,0,0,.22); }
   .card img { width: 100%; height: auto; aspect-ratio: 1; object-fit: cover; display: block; background: #15171a; }
-  .card .meta { padding: 10px 12px 12px; display: grid; gap: 2px; }
-  .card .title { font-weight: 600; font-size: 15px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .card .meta { padding: 12px 13px 13px; display: grid; gap: 4px; }
+  .card .title { font-family: Georgia, 'Times New Roman', serif; font-weight: 600; font-size: 16px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
   .card .by { color: var(--muted); font-size: 13px; display: flex; justify-content: space-between; gap: 8px; }
   .card .by span:first-child { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
   .empty, .message { text-align: center; color: var(--muted); padding: 48px 16px; }
   .more { display: flex; justify-content: center; padding: 24px 0 0; }
 
   dialog { width: min(980px, calc(100vw - 24px)); max-height: calc(100vh - 24px); padding: 0; border: 1px solid var(--line);
-           border-radius: 14px; background: var(--panel); color: var(--text); }
+           border-radius: 10px; background: var(--panel); color: var(--text); box-shadow: 0 24px 80px rgba(0,0,0,.5); }
   dialog::backdrop { background: rgba(0,0,0,.7); }
   .viewer { display: grid; grid-template-columns: minmax(0, 1.6fr) minmax(240px, 1fr); }
-  .stage { position: relative; aspect-ratio: 1; background: #15171a; min-height: 280px; }
+  .stage { position: relative; aspect-ratio: 1; background: linear-gradient(145deg, #24251f, #141613 72%); min-height: 280px; }
   .stage canvas { position: absolute; inset: 0; width: 100%; height: 100%; display: block; }
   .stage .loading { position: absolute; inset: 0; display: grid; place-items: center; color: var(--muted); }
-  .info { padding: 20px; display: flex; flex-direction: column; gap: 10px; }
-  .info h2 { margin: 0; font-size: 22px; word-break: break-word; }
+  .info { padding: 24px; display: flex; flex-direction: column; gap: 12px; }
+  .info h2 { margin: 0; font-family: Georgia, 'Times New Roman', serif; font-size: 25px; font-weight: 600; word-break: break-word; }
   .info .by { color: var(--muted); margin: 0; }
   .info .actions { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 6px; }
   .info .small { display: flex; flex-wrap: wrap; gap: 8px; margin-top: auto; padding-top: 12px; }
@@ -62,7 +66,20 @@
   .hint { color: var(--muted); font-size: 13px; margin: 0; }
   .error { color: var(--danger); font-size: 14px; margin: 0; min-height: 1em; }
   .close { position: absolute; top: 10px; right: 10px; z-index: 2; background: rgba(20,22,26,.8); padding: 6px 11px; }
-  @media (max-width: 720px) { .viewer { grid-template-columns: 1fr; } }
+  @media (max-width: 720px) {
+    .viewer { grid-template-columns: 1fr; }
+    .stage { min-height: 0; max-height: min(62vh, 520px); }
+    .info { padding: 18px; }
+  }
+  @media (max-width: 520px) {
+    header { align-items: flex-start; }
+    header h1 { font-size: 23px; max-width: 24ch; }
+    header .button { margin-left: auto; }
+    .controls input { flex-basis: 100%; max-width: none; }
+    .controls select { flex: 1; }
+    .grid { grid-template-columns: repeat(auto-fill, minmax(155px, 1fr)); gap: 12px; }
+  }
+  @media (prefers-reduced-motion: reduce) { .card, button, .button { transition: none; } }
 </style>
 <script type="importmap">
 { "imports": {
@@ -73,7 +90,7 @@
 </head>
 <body>
 <header>
-  <h1>Pygmalion's 100% Authentic Sculpting Experience <span>Gallery</span></h1>
+  <h1>Pygmalion's Unexceptionable 100% Authentic Sculpting Experience <span>Gallery</span></h1>
   <a class="button primary" href="studio.html">Start sculpting</a>
 </header>
 <p id="demoNote" class="demo" hidden>Demo mode: the gallery isn't connected to the online database yet, so it only shows sculptures published from this browser.</p>

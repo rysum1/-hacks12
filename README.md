@@ -1,4 +1,4 @@
-# Pygmalion's 100% Authentic Sculpting Experience
+# Pygmalion's Unexceptionable 100% Authentic Sculpting Experience
 
 Carve a block of stone in the browser, publish it, and browse what everyone else made.
 

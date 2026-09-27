@@ -10,11 +10,16 @@ export function createPool({ required = true } = {}) {
     return null;
   }
 
+  const databaseUrl = new URL(connectionString);
+  for (const parameter of ['ssl', 'sslmode', 'sslcert', 'sslkey', 'sslrootcert', 'sslca']) {
+    databaseUrl.searchParams.delete(parameter);
+  }
+
   const ca = process.env.DATABASE_CA_CERT?.replace(/\\n/g, '\n');
   if (process.env.NODE_ENV === 'production' && !ca) {
     throw new Error('DATABASE_CA_CERT is required in production.');
   }
   const ssl = ca ? { ca, rejectUnauthorized: true } : undefined;
 
-  return new Pool({ connectionString, ssl });
+  return new Pool({ connectionString: databaseUrl.toString(), ssl });
 }

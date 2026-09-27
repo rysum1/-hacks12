@@ -73,6 +73,7 @@ async function apiStore() {
   if (!health.ok || (await health.json()).mode !== 'online') {
     throw new Error('DigitalOcean gallery API is unavailable.');
   }
+  const toItem = item => ({ ...item, createdAt: new Date(item.createdAt) });
   return {
     mode: 'online',
     async publish({ title, artist, data, thumb, remixOf = null }) {
@@ -87,9 +88,13 @@ async function apiStore() {
     },
     async list({ sort = 'new', search = '', page = 0 } = {}) {
       const params = new URLSearchParams({ sort, search: safeSearch(search), page: String(page) });
-      return request(`/sculptures?${params}`);
+      const result = await request(`/sculptures?${params}`);
+      return { ...result, items: result.items.map(toItem) };
     },
-    get: id => request(`/sculptures/${encodeURIComponent(id)}`),
+    async get(id) {
+      const item = await request(`/sculptures/${encodeURIComponent(id)}`);
+      return item ? toItem(item) : null;
+    },
     async getData(item) {
       const res = await fetch(api(`/sculptures/${encodeURIComponent(item.id)}/data`));
       if (!res.ok) throw new Error(`Downloading the sculpture failed (${res.status})`);

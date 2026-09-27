@@ -1757,20 +1757,20 @@ addEventListener('resize', () => {
 // `highlight` puts a pulsing ring on the control the step talks about.
 // ---------------------------------------------------------------------------
 const TUTORIAL = [
-  { voice: 'assets/voice/tutorial-01.mp3', text: 'Salve, I am Pygmalion.' },
-  { voice: 'assets/voice/tutorial-02.mp3', text: 'Welcome to my Unexceptionable 100% Authentic Sculpting Experience.' },
-  { voice: 'assets/voice/tutorial-03.mp3', text: 'To begin, select the hammer tool in the top left corner of the studio.',
+  { voice: 'assets/tutorial-01.mp3', text: 'Salve, I am Pygmalion.' },
+  { voice: 'assets/tutorial-02.mp3', text: 'Welcome to my Unexceptionable 100% Authentic Sculpting Experience.' },
+  { voice: 'assets/tutorial-03.mp3', text: 'To begin, select the hammer tool in the top left corner of the studio.',
     highlight: '#toolbar [data-tool="hammer"]', waitFor: 'mode:hammer' },
-  { voice: 'assets/voice/tutorial-04.mp3', text: 'Click and drag along the stone to shape your strike, use the R and F keys to determine the depth.',
+  { voice: 'assets/tutorial-04.mp3', text: 'Click and drag along the stone to shape your strike, use the R and F keys to determine the depth.',
     highlight: '#hammerDepth', waitFor: 'hammerStrike' },
-  { voice: 'assets/voice/tutorial-05.mp3', text: 'Ζήτω!', cheer: true, lang: 'el' },
-  { voice: 'assets/voice/tutorial-06.mp3', text: 'Next, select the chisel tool.', highlight: '#toolbar [data-chisel]', waitFor: 'mode:chisel' },
-  { voice: 'assets/voice/tutorial-07.mp3', text: 'Click and drag along the stone to rotate your strike, use the R and F keys to change its angle.',
+  { voice: 'assets/tutorial-05.mp3', text: 'Ζήτω!', cheer: true, lang: 'el' },
+  { voice: 'assets/tutorial-06.mp3', text: 'Next, select the chisel tool.', highlight: '#toolbar [data-chisel]', waitFor: 'mode:chisel' },
+  { voice: 'assets/tutorial-07.mp3', text: 'Click and drag along the stone to rotate your strike, use the R and F keys to change its angle.',
     highlight: '#chiselAngle', waitFor: 'chiselStrike' },
-  { voice: 'assets/voice/tutorial-08.mp3', text: 'Γιούπι!', cheer: true, lang: 'el' },
-  { voice: 'assets/voice/tutorial-09.mp3', text: 'Use the sandpaper tool to smooth out your sculpture and the paint tool to add color.',
+  { voice: 'assets/tutorial-08.mp3', text: 'Γιούπι!', cheer: true, lang: 'el' },
+  { voice: 'assets/tutorial-09.mp3', text: 'Use the sandpaper tool to smooth out your sculpture and the paint tool to add color.',
     highlight: '#toolbar [data-tool="smooth"], #toolbar [data-tool="paint"]' },
-  { voice: 'assets/voice/tutorial-10.mp3', text: 'You can reset with a new piece of stone at any time.', highlight: '#btnReset' },
+  { voice: 'assets/tutorial-10.mp3', text: 'You can reset with a new piece of stone at any time.', highlight: '#btnReset' },
 ];
 const tut = { step: -1, timer: 0, el: document.getElementById('tutorial') };
 

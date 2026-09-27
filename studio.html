@@ -109,6 +109,8 @@
   .tut-nav button:hover { background: #dfd0ad; }
   .tut-nav button.primary { background: #8a5a2b; border-color: #8a5a2b; color: #fff8e8; }
   .tut-nav button.primary:hover { background: #9d6a37; }
+  .tut-nav .tut-voice { background: none; border-color: transparent; padding: 3px 5px; font-size: 15px; }
+  .tut-nav .tut-voice[aria-pressed="false"] { opacity: .55; }
   .tut-nav .tut-skip { background: none; border-color: transparent; color: #7a6a4c; text-decoration: underline; }
   /* Pulsing ring around whatever the current step asks you to use. */
   .tut-highlight { position: relative; z-index: 1; animation: tutPulse 1.2s ease-in-out infinite; }
@@ -290,6 +292,7 @@
   <div class="bubble">
     <p id="tutText" aria-live="polite"></p>
     <div class="tut-nav">
+      <button type="button" id="tutVoice" class="tut-voice" aria-pressed="true" title="Voice on (click to mute)" aria-label="Pygmalion's voice">🔊</button>
       <span id="tutCount"></span>
       <button type="button" id="tutSkip" class="tut-skip">Skip</button>
       <button type="button" id="tutBack">Back</button>
@@ -359,6 +362,7 @@ document.getElementById('lightLevel').oninput = e => {
   hemi.intensity = LIGHT_BASE.hemi * k;
   sun.intensity = LIGHT_BASE.sun * k;
   ceilingMat.emissiveIntensity = CEILING_GLOW * k;
+  for (const m of paintingMats) m.emissiveIntensity = PAINTING_GLOW * k;
 };
 
 // ---------------------------------------------------------------------------
@@ -410,6 +414,54 @@ const ceilingMat = new THREE.MeshStandardMaterial({ roughness: 1, emissive: 0xff
   }
 }
 scene.add(room);
+
+// ---------------------------------------------------------------------------
+// Paintings: one framed picture on each wall. To swap one, change its file
+// here. `width` is in world units (the block is 1.2 wide); height follows the
+// picture's own shape. wall: 0 = behind the stone at the start, 1 = left,
+// 2 = front (behind the starting camera), 3 = right.
+// ---------------------------------------------------------------------------
+const PAINTINGS = [
+  { file: 'assets/Backdrop Image 3.webp', wall: 0, width: 5.2 },   // bull-leaping fresco
+  { file: 'assets/Backdrop Image 1.jpg',  wall: 1, width: 4.4 },   // classical city
+  { file: 'assets/Backdrop Image 2.jpg',  wall: 2, width: 2.1 },   // Augustus
+  { file: 'assets/Backdrop Image 4.jpg',  wall: 3, width: 2.3 },   // Winged Victory
+];
+const PAINTING_CENTER_Y = 1.3;      // eye level, a little above the stone
+const PAINTING_GLOW = 0.25;         // soft self-light so walls facing away from the sun stay readable
+const paintingMats = [];
+{
+  const frameMat = new THREE.MeshStandardMaterial({ color: 0x8a6a2e, metalness: 0.45, roughness: 0.45 });
+  const FRAME = 0.16, DEPTH = 0.08;
+  for (const pt of PAINTINGS) {
+    const mat = new THREE.MeshStandardMaterial({ roughness: 0.8, emissive: 0xffffff, emissiveIntensity: PAINTING_GLOW });
+    paintingMats.push(mat);
+    const group = new THREE.Group();
+    const a = pt.wall * Math.PI / 2;
+    // Same placement as the walls, pulled a hair into the room.
+    group.position.set(-Math.sin(a) * (ROOM.half - 0.01), PAINTING_CENTER_Y, -Math.cos(a) * (ROOM.half - 0.01));
+    group.rotation.y = a;
+    room.add(group);
+    new THREE.TextureLoader().load(encodeURI(pt.file), tex => {
+      tex.colorSpace = THREE.SRGBColorSpace;
+      tex.anisotropy = renderer.capabilities.getMaxAnisotropy();
+      mat.map = mat.emissiveMap = tex;
+      mat.needsUpdate = true;
+      const w = pt.width, h = w * tex.image.height / tex.image.width;
+      const canvasMesh = new THREE.Mesh(new THREE.PlaneGeometry(w, h), mat);
+      canvasMesh.position.z = 0.02;
+      group.add(canvasMesh);
+      // Gilded frame: four bars around the picture.
+      const bars = [[w + 2 * FRAME, FRAME, 0, (h + FRAME) / 2], [w + 2 * FRAME, FRAME, 0, -(h + FRAME) / 2],
+                    [FRAME, h, -(w + FRAME) / 2, 0], [FRAME, h, (w + FRAME) / 2, 0]];
+      for (const [bw, bh, x, y] of bars) {
+        const bar = new THREE.Mesh(new THREE.BoxGeometry(bw, bh, DEPTH), frameMat);
+        bar.position.set(x, y, DEPTH / 2);
+        group.add(bar);
+      }
+    });
+  }
+}
 
 // ---------------------------------------------------------------------------
 // Pedestal, built from the drawing in the chat: a square column whose outline
@@ -1699,25 +1751,75 @@ addEventListener('resize', () => {
 // Tutorial - Pygmalion walks new sculptors through the tools.
 // Steps with `waitFor` move on by themselves once you do the thing (Next
 // still works if you'd rather skip ahead). `cheer` steps pass after a moment.
+// `voice` is Pygmalion reading that line (cut from "Pygmalion Tutorial
+// Recording.mp3"). Each clip plays only when its step is shown, and stops
+// when you move to another step.
 // `highlight` puts a pulsing ring on the control the step talks about.
 // ---------------------------------------------------------------------------
 const TUTORIAL = [
-  { text: 'Salve, I am Pygmalion.' },
-  { text: 'Welcome to my Unexceptionable 100% Authentic Sculpting Experience.' },
-  { text: 'To begin, select the hammer tool in the top left corner of the studio.',
+  { voice: 'assets/voice/tutorial-01.mp3', text: 'Salve, I am Pygmalion.' },
+  { voice: 'assets/voice/tutorial-02.mp3', text: 'Welcome to my Unexceptionable 100% Authentic Sculpting Experience.' },
+  { voice: 'assets/voice/tutorial-03.mp3', text: 'To begin, select the hammer tool in the top left corner of the studio.',
     highlight: '#toolbar [data-tool="hammer"]', waitFor: 'mode:hammer' },
-  { text: 'Click and drag along the stone to shape your strike, use the R and F keys to determine the depth.',
+  { voice: 'assets/voice/tutorial-04.mp3', text: 'Click and drag along the stone to shape your strike, use the R and F keys to determine the depth.',
     highlight: '#hammerDepth', waitFor: 'hammerStrike' },
-  { text: 'Ζήτω!', cheer: true, lang: 'el' },
-  { text: 'Next, select the chisel tool.', highlight: '#toolbar [data-chisel]', waitFor: 'mode:chisel' },
-  { text: 'Click and drag along the stone to rotate your strike, use the R and F keys to change its angle.',
+  { voice: 'assets/voice/tutorial-05.mp3', text: 'Ζήτω!', cheer: true, lang: 'el' },
+  { voice: 'assets/voice/tutorial-06.mp3', text: 'Next, select the chisel tool.', highlight: '#toolbar [data-chisel]', waitFor: 'mode:chisel' },
+  { voice: 'assets/voice/tutorial-07.mp3', text: 'Click and drag along the stone to rotate your strike, use the R and F keys to change its angle.',
     highlight: '#chiselAngle', waitFor: 'chiselStrike' },
-  { text: 'Γιούπι!', cheer: true, lang: 'el' },
-  { text: 'Use the sandpaper tool to smooth out your sculpture and the paint tool to add color.',
+  { voice: 'assets/voice/tutorial-08.mp3', text: 'Γιούπι!', cheer: true, lang: 'el' },
+  { voice: 'assets/voice/tutorial-09.mp3', text: 'Use the sandpaper tool to smooth out your sculpture and the paint tool to add color.',
     highlight: '#toolbar [data-tool="smooth"], #toolbar [data-tool="paint"]' },
-  { text: 'You can reset with a new piece of stone at any time.', highlight: '#btnReset' },
+  { voice: 'assets/voice/tutorial-10.mp3', text: 'You can reset with a new piece of stone at any time.', highlight: '#btnReset' },
 ];
 const tut = { step: -1, timer: 0, el: document.getElementById('tutorial') };
+
+// --- Pygmalion's voice ---------------------------------------------------------
+const VOICE_KEY = 'pygmalion.voice';
+const voiceClips = TUTORIAL.map(st => {
+  const a = new Audio(st.voice);
+  a.preload = 'auto';
+  return a;
+});
+const voiceBtn = document.getElementById('tutVoice');
+let voiceOn = true, voiceBlocked = false, playingClip = null;
+try { voiceOn = localStorage.getItem(VOICE_KEY) !== 'off'; } catch { /* private mode */ }
+function stopVoice() {
+  if (playingClip) { playingClip.pause(); playingClip.onended = null; playingClip = null; }
+}
+// Play step i's line from the start. onDone runs when it finishes (or right
+// away if the voice is off or can't play), so cheers can wait for it.
+function playVoice(i, onDone) {
+  stopVoice();
+  const clip = voiceClips[i];
+  if (!voiceOn || !clip) { onDone?.(false); return; }
+  clip.currentTime = 0;
+  clip.onended = () => { if (playingClip === clip) playingClip = null; onDone?.(true); };
+  playingClip = clip;
+  clip.play().then(() => { voiceBlocked = false; }).catch(() => {
+    // The browser blocks sound until the visitor has clicked something on the
+    // page. Try again on their first click or key press.
+    if (playingClip === clip) playingClip = null;
+    voiceBlocked = true;
+    onDone?.(false);
+  });
+}
+function resumeBlockedVoice() {
+  if (voiceBlocked && tut.step >= 0 && voiceOn) { voiceBlocked = false; playVoice(tut.step); }
+}
+addEventListener('pointerdown', resumeBlockedVoice, true);
+addEventListener('keydown', resumeBlockedVoice, true);
+function setVoice(on) {
+  voiceOn = on;
+  voiceBtn.setAttribute('aria-pressed', String(on));
+  voiceBtn.textContent = on ? '🔊' : '🔇';
+  voiceBtn.title = on ? 'Voice on (click to mute)' : 'Voice off (click to unmute)';
+  try { localStorage.setItem(VOICE_KEY, on ? 'on' : 'off'); } catch { /* private mode */ }
+  if (!on) stopVoice();
+  else if (tut.step >= 0) playVoice(tut.step);
+}
+voiceBtn.onclick = e => { e.currentTarget.blur(); setVoice(!voiceOn); };
+setVoice(voiceOn);
 const TUT_DONE_KEY = 'pygmalion.tutorialDone';
 function showTutorialStep(i) {
   clearTimeout(tut.timer);
@@ -1732,13 +1834,17 @@ function showTutorialStep(i) {
   document.getElementById('tutBack').hidden = i === 0;
   document.getElementById('tutNext').textContent = i === TUTORIAL.length - 1 ? 'Finish' : 'Next';
   if (st.highlight) document.querySelectorAll(st.highlight).forEach(el => el.classList.add('tut-highlight'));
-  if (st.cheer) tut.timer = setTimeout(() => showTutorialStep(i + 1), 1800);
+  // Cheers move on once Pygmalion has finished saying them.
+  playVoice(i, spoke => {
+    if (st.cheer && tut.step === i) tut.timer = setTimeout(() => showTutorialStep(i + 1), spoke ? 500 : 1800);
+  });
   tut.el.hidden = false;
   syncTutorialPosition();
 }
 function startTutorial() { showTutorialStep(0); }
 function endTutorial() {
   clearTimeout(tut.timer);
+  stopVoice();
   tut.step = -1;
   tut.el.hidden = true;
   document.querySelectorAll('.tut-highlight').forEach(el => el.classList.remove('tut-highlight'));
@@ -1895,6 +2001,10 @@ function frame() {
   }
   if (meshDirty) { meshDirty = false; rebuildMesh(); }   // one remesh per frame, however many dabs
   controls.update();
+  const inset = 0.35;
+  camera.position.x = Math.max(-ROOM.half + inset, Math.min(ROOM.half - inset, camera.position.x));
+  camera.position.z = Math.max(-ROOM.half + inset, Math.min(ROOM.half - inset, camera.position.z));
+  camera.position.y = Math.max(ROOM.floorY + 0.2, Math.min(ROOM.floorY + ROOM.height - 0.2, camera.position.y));
   renderer.render(scene, camera);
   requestAnimationFrame(frame);
 }

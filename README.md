@@ -12,6 +12,8 @@ js/store.js       Gallery storage: DigitalOcean API, or browser demo mode
 server/index.js   Node API for gallery data and Spaces file storage
 server/schema.sql PostgreSQL schema
 assets/stone.jpg  Stone texture
+assets/fonts/PixelifySans-VariableFont_wght.ttf Pixelify Sans UI font
+assets/fonts/OFL-PixelifySans.txt Pixelify Sans license
 ```
 
 ## 1. Run it on your computer

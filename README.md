@@ -4,7 +4,10 @@ Carve a block of stone in the browser with a real chisel, hammer, sandpaper, and
 then publish what you made to a shared gallery for everyone to see.
 
 **Live:** https://pygmalion-gallery-btg9u.ondigitalocean.app/studio.html
-**Demo:** 
+
+## Youtube Video Link for Demo:
+
+https://youtu.be/-eW8IVUZ_Vo
 
 ## How it works
 
@@ -96,6 +99,4 @@ See `TOOL_ART` in `studio.html`: replace an image with your own pixel art (tool 
 diagonal, working end toward the top-right, transparent background). The toolbar icon and the
 3D model in your hand are both built from it automatically.
 
-## Youtube Video Link for Demo:
 
-https://youtu.be/-eW8IVUZ_Vo

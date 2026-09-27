@@ -95,3 +95,7 @@ starting the server.
 See `TOOL_ART` in `studio.html`: replace an image with your own pixel art (tool on the
 diagonal, working end toward the top-right, transparent background). The toolbar icon and the
 3D model in your hand are both built from it automatically.
+
+## Youtube Video Link for Demo:
+
+https://youtu.be/-eW8IVUZ_Vo
